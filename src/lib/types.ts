@@ -2,8 +2,8 @@ import { FieldValue } from "firebase/firestore";
 
 export type Bet = {
   id: string;
-  color: string;
-  colorHex: string;
+  betType: "color" | "number" | "size";
+  betValue: string | number;
   amount: number;
   outcome: "win" | "loss";
   payout: number;
@@ -20,3 +20,5 @@ export type Transaction = {
   userId: string;
   timestamp: string; // Changed from Date | FieldValue to string for serialization
 };
+
+    

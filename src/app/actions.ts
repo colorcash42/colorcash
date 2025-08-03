@@ -164,8 +164,6 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             transaction.set(newBetRef, {
                 betType,
                 betValue,
-                color: betValue, // For history display
-                colorHex: '#FFFFFF', // Not used anymore, but kept for type safety
                 amount,
                 outcome: isWin ? "win" : "loss",
                 payout,
@@ -179,7 +177,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
         return { 
             success: true, 
-            result: betResult,
+            result: { ...betResult },
             message: betResult.isWin ? `You won ₹${betResult.payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
         };
 
@@ -309,3 +307,5 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred while processing the transaction." };
     }
 }
+
+    

@@ -22,6 +22,7 @@ import {
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
+type BetType = 'color' | 'number' | 'size';
 
 interface AppContextType {
   user: User | null;
@@ -39,7 +40,7 @@ interface AppContextType {
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
+  placeBet: (amount: number, betType: BetType, betValue: string | number) => Promise<any>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
@@ -166,22 +167,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     router.push("/");
   };
 
-  const placeBet = async (amount: number, color: string, colorHex: string) => {
+  const placeBet = async (amount: number, betType: BetType, betValue: string | number) => {
     if (!user) return;
-    const result = await placeBetAction(user.uid, amount, color, colorHex);
-    if (result.success) {
-      toast({
-        title: result.isWin ? "You Won!" : "You Lost",
-        description: result.message,
-      });
-    } else {
+    const result = await placeBetAction(user.uid, amount, betType, betValue);
+    
+    // We still show toast here, but we also return the result for the dialog
+    if (!result.success) {
       toast({
         variant: "destructive",
         title: "Bet Failed",
         description: result.message,
       });
     }
-    await fetchData(); 
+
+    await fetchData();
+    return result;
   };
   
   const requestDeposit = async (amount: number, utr: string) => {
@@ -274,3 +274,5 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+    

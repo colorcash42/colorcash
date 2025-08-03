@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -21,6 +22,27 @@ const toDate = (timestamp: string | Date): Date => {
   }
   return timestamp;
 };
+
+const getBetDisplayValue = (bet: Bet) => {
+    switch (bet.betType) {
+        case 'color':
+            let colorClass = '';
+            if (bet.betValue === 'Red') colorClass = 'bg-red-500';
+            if (bet.betValue === 'Green') colorClass = 'bg-green-500';
+            if (bet.betValue === 'Violet') colorClass = 'bg-violet-500';
+            return <div className="flex items-center gap-2 font-medium">
+                <div className={cn("h-4 w-4 rounded-full", colorClass)} />
+                {bet.betValue}
+            </div>
+        case 'number':
+             return <span className="font-mono font-medium">{bet.betValue}</span>
+        case 'size':
+            return <span className="font-medium">{bet.betValue}</span>
+        default:
+            return <span className="font-medium">{bet.betValue}</span>
+    }
+}
+
 
 export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
   const { bets } = useAppContext();
@@ -39,7 +61,8 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
             <Table>
             <TableHeader>
                 <TableRow>
-                <TableHead>Color</TableHead>
+                <TableHead>Bet On</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead className="text-right">Bet Amount</TableHead>
                 <TableHead className="text-center">Outcome</TableHead>
                 <TableHead className="text-right">Payout</TableHead>
@@ -49,7 +72,7 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
             <TableBody>
                 {displayBets.length === 0 ? (
                     <TableRow>
-                        <TableCell colSpan={5} className="text-center h-24">
+                        <TableCell colSpan={6} className="text-center h-24">
                             You haven't placed any bets yet.
                         </TableCell>
                     </TableRow>
@@ -57,11 +80,9 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                     displayBets.map((bet) => (
                         <TableRow key={bet.id}>
                         <TableCell>
-                            <div className="flex items-center gap-2 font-medium">
-                                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: bet.colorHex }} />
-                                {bet.color}
-                            </div>
+                            {getBetDisplayValue(bet)}
                         </TableCell>
+                        <TableCell className="capitalize text-muted-foreground">{bet.betType}</TableCell>
                         <TableCell className="text-right tabular-nums">₹{bet.amount.toFixed(2)}</TableCell>
                         <TableCell className="text-center">
                             <Badge variant={bet.outcome === 'win' ? "default" : "destructive"}>
@@ -87,3 +108,5 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
     </Card>
   );
 }
+
+    
