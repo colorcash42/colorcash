@@ -28,7 +28,7 @@ const convertTimestamps = (data: any) => {
   return data;
 }
 
-type Theme = 'dark' | 'dark-pro';
+type Theme = 'light' | 'dark' | 'dark-pro';
 
 interface AppContextType {
   isLoggedIn: boolean;
@@ -82,6 +82,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setIsLoggedIn(loggedInStatus);
     if (savedTheme) {
       setThemeState(savedTheme);
+    } else {
+      setThemeState('dark'); // Default to dark if no theme is saved
     }
     setIsLoading(false);
   }, []);
@@ -93,7 +95,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoggedIn, fetchData]);
 
   const setTheme = (newTheme: Theme | string) => {
-    if(newTheme === 'dark' || newTheme === 'dark-pro') {
+    if(newTheme === 'light' || newTheme === 'dark' || newTheme === 'dark-pro') {
       setThemeState(newTheme as Theme);
       localStorage.setItem("colorcash-theme", newTheme);
     }
