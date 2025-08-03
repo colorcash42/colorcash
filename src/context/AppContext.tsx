@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from "react";
@@ -21,16 +22,31 @@ import {
 } from "@/app/actions";
 
 // Helper function to convert Firestore server timestamps to JS Dates
-const convertTimestamps = (data: any) => {
-  for (const key in data) {
-    if (data[key] && typeof data[key] === 'object' && data[key].seconds) {
-      data[key] = new Date(data[key].seconds * 1000);
-    } else if (typeof data[key] === 'object' && data[key] !== null) {
-      convertTimestamps(data[key]);
+const convertTimestamps = (data: any): any => {
+    if (data === null || typeof data !== 'object') {
+        return data;
     }
-  }
-  return data;
+
+    // Firestore Timestamp check
+    if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
+        return new Date(data.seconds * 1000 + data.nanoseconds / 1000000);
+    }
+
+    // Handle arrays
+    if (Array.isArray(data)) {
+        return data.map(item => convertTimestamps(item));
+    }
+    
+    // Handle objects
+    const newObj: { [key: string]: any } = {};
+    for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+            newObj[key] = convertTimestamps(data[key]);
+        }
+    }
+    return newObj;
 }
+
 
 type Theme = "light" | "dark" | "dark-pro";
 
@@ -109,13 +125,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       ]);
 
       setWalletBalance(balanceRes.balance);
-      setBets(betsRes.bets.map(convertTimestamps));
-      setTransactions(transactionsRes.transactions.map(convertTimestamps));
+      setBets(convertTimestamps(betsRes.bets));
+      setTransactions(convertTimestamps(transactionsRes.transactions));
 
       // Only admins fetch all pending transactions
       if (isAdmin) {
         const pendingTransRes = await getPendingTransactions();
-        setPendingTransactions(pendingTransRes.transactions.map(convertTimestamps));
+        setPendingTransactions(convertTimestamps(pendingTransRes.transactions));
       } else {
         setPendingTransactions([]); // Ensure non-admins have an empty list
       }
