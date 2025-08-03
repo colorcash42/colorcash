@@ -14,12 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 
-// Helper function to convert Firestore Timestamp to Date
-const toDate = (timestamp: any): Date => {
-  if (timestamp && typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
+// Helper function to convert ISO string to Date
+const toDate = (timestamp: string | Date): Date => {
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
   }
-  return new Date(timestamp);
+  return timestamp;
 };
 
 export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {

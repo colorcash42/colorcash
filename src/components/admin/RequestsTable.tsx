@@ -17,12 +17,12 @@ import { format } from "date-fns";
 import { useMemo } from "react";
 import { Transaction } from "@/lib/types";
 
-// Helper function to convert Firestore Timestamp to Date
-const toDate = (timestamp: any): Date => {
-  if (timestamp && typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
+// Helper function to convert ISO string to Date
+const toDate = (timestamp: string | Date): Date => {
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
   }
-  return new Date(timestamp);
+  return timestamp;
 };
 
 
@@ -31,6 +31,7 @@ export function RequestsTable() {
 
   // We will now receive pending transactions from context directly to improve consistency
   const sortedPendingTransactions = useMemo(() => {
+    if (!pendingTransactions) return [];
     return [...pendingTransactions].sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
   }, [pendingTransactions]);
 

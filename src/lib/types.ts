@@ -7,8 +7,7 @@ export type Bet = {
   amount: number;
   outcome: "win" | "loss";
   payout: number;
-  // Firestore timestamps can be Date or FieldValue
-  timestamp: Date | FieldValue; 
+  timestamp: string; // Changed from Date | FieldValue to string for serialization
 };
 
 export type Transaction = {
@@ -19,7 +18,6 @@ export type Transaction = {
   utr?: string;
   upi?: string;
   userId: string;
-  // Firestore timestamps can be Date or FieldValue
-  timestamp: Date | FieldValue;
-  processedTimestamp?: Date | FieldValue;
+  timestamp: string; // Changed from Date | FieldValue to string for serialization
+  processedTimestamp?: string; // Changed from Date | FieldValue to string for serialization
 };

@@ -21,41 +21,6 @@ import {
   getPendingTransactions,
 } from "@/app/actions";
 
-// Helper function to recursively convert Firestore Timestamps to JS Dates
-const convertTimestamps = (data: any): any => {
-    if (!data) return data;
-
-    // Directly convert if it's a Firestore Timestamp
-    if (typeof data.toDate === 'function') {
-        return data.toDate();
-    }
-    
-    // If it's a plain object that looks like a timestamp from serialization
-    if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
-        return new Date(data.seconds * 1000 + data.nanoseconds / 1000000);
-    }
-
-    // Recurse into arrays
-    if (Array.isArray(data)) {
-        return data.map(item => convertTimestamps(item));
-    }
-
-    // Recurse into objects
-    if (typeof data === 'object') {
-        const newObj: { [key: string]: any } = {};
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                newObj[key] = convertTimestamps(data[key]);
-            }
-        }
-        return newObj;
-    }
-
-    // Return primitive values as-is
-    return data;
-};
-
-
 type Theme = "light" | "dark" | "dark-pro";
 
 interface AppContextType {
@@ -133,13 +98,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       ]);
 
       setWalletBalance(balanceRes.balance);
-      setBets(convertTimestamps(betsRes.bets));
-      setTransactions(convertTimestamps(transactionsRes.transactions));
+      setBets(betsRes.bets);
+      setTransactions(transactionsRes.transactions);
 
       // Only admins fetch all pending transactions
       if (isAdmin) {
         const pendingTransRes = await getPendingTransactions();
-        setPendingTransactions(convertTimestamps(pendingTransRes.transactions));
+        setPendingTransactions(pendingTransRes.transactions);
       } else {
         setPendingTransactions([]); // Ensure non-admins have an empty list
       }

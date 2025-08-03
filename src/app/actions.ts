@@ -3,7 +3,28 @@
 import type { Bet, Transaction } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp } from "firebase/firestore";
+
+// --- HELPER FUNCTIONS ---
+
+// Converts Firestore Timestamps to ISO strings for serialization
+const serializeObject = (obj: any) => {
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const value = obj[key];
+            if (value instanceof Timestamp) {
+                newObj[key] = value.toDate().toISOString();
+            } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+                newObj[key] = serializeObject(value);
+            } else {
+                newObj[key] = value;
+            }
+        }
+    }
+    return newObj;
+};
+
 
 // Helper function to ensure user document exists
 async function ensureUserDocument(userId: string) {
@@ -32,7 +53,8 @@ export async function getBets(userId: string) {
   const betsCollectionRef = collection(db, `users/${userId}/bets`);
   const q = query(betsCollectionRef, orderBy("timestamp", "desc"));
   const querySnapshot = await getDocs(q);
-  const bets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
+  // Serialize each document before returning
+  const bets = querySnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Bet);
   return { bets };
 }
 
@@ -40,7 +62,8 @@ export async function getTransactions(userId: string) {
   const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
   const q = query(transactionsCollectionRef, orderBy("timestamp", "desc"));
   const querySnapshot = await getDocs(q);
-  const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+  // Serialize each document before returning
+  const transactions = querySnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Transaction);
   return { transactions };
 }
 
@@ -49,7 +72,8 @@ export async function getPendingTransactions() {
     const globalTransactionsCollectionRef = collection(db, "transactions");
     const q = query(globalTransactionsCollectionRef, where("status", "==", "pending"), orderBy("timestamp", "desc"));
     const querySnapshot = await getDocs(q);
-    const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+    // Serialize each document before returning
+    const transactions = querySnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Transaction);
     return { transactions };
 }
 
@@ -110,7 +134,7 @@ export async function requestDepositAction(userId: string, amount: number, utr: 
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
     const globalTransactionsCollectionRef = collection(db, "transactions");
 
-    const newTransaction: Omit<Transaction, "id" | "timestamp"> = {
+    const newTransaction: Omit<Transaction, "id" | "timestamp" | "processedTimestamp"> & { timestamp: any } = {
         type: 'deposit',
         amount,
         status: 'pending',
@@ -143,7 +167,7 @@ export async function requestWithdrawalAction(userId: string, amount: number, up
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
     const globalTransactionsCollectionRef = collection(db, "transactions");
 
-    const newTransaction: Omit<Transaction, "id" | "timestamp"> = {
+    const newTransaction: Omit<Transaction, "id" | "timestamp" | "processedTimestamp"> & { timestamp: any } = {
         type: 'withdrawal',
         amount,
         status: 'pending',
@@ -153,7 +177,7 @@ export async function requestWithdrawalAction(userId: string, amount: number, up
     };
     
     const batch = writeBatch(db);
-    batch.set(doc(transactionsCollectionRef), newTransaction);
+    batch.set(doc(transactionsCollectionfRef), newTransaction);
     batch.set(doc(globalTransactionsCollectionRef), newTransaction);
     await batch.commit();
     
@@ -173,12 +197,9 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
                 throw "Transaction not found.";
             }
 
-            const transData = globalDoc.data() as Transaction;
+            const transData = globalDoc.data() as Transaction & { timestamp: Timestamp }; // Cast to include Firestore Timestamp
             const userDocRef = doc(db, "users", transData.userId);
             
-            // Find the user's transaction document to update it as well.
-            // This is a bit tricky without a unique ID shared between them.
-            // We'll query based on timestamp and amount, which is not foolproof but okay for this app.
             const userTransactionQuery = query(
                 collection(db, `users/${transData.userId}/transactions`), 
                 where("timestamp", "==", transData.timestamp),
@@ -187,8 +208,6 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
             );
             const userTransactionSnapshot = await getDocs(userTransactionQuery);
             if (userTransactionSnapshot.empty) {
-                // This might happen if there's a slight time mismatch. For a real app,
-                // a more robust linking mechanism would be needed.
                 console.warn("User's corresponding transaction not found. Only updating global record.");
             }
             
