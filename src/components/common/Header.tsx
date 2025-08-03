@@ -16,19 +16,23 @@ import {
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
+import { ADMIN_UIDS } from "@/lib/admins";
 
 const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: Gem },
     { href: "/wallet", label: "Wallet", icon: Wallet },
-    { href: "/admin", label: "Admin", icon: ShieldCheck },
-]
+];
+
+const adminLink = { href: "/admin", label: "Admin", icon: ShieldCheck };
+
 
 export function Header() {
-  const { walletBalance, logout } = useAppContext();
+  const { user, walletBalance, logout } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const isUserAdmin = user ? ADMIN_UIDS.includes(user.uid) : false;
 
   const handleLogout = () => {
     logout();
@@ -57,6 +61,16 @@ export function Header() {
                       </Link>
                   </Button>
               ))}
+              {isUserAdmin && (
+                 <Button variant="ghost" asChild className={cn(
+                      pathname === adminLink.href && "bg-secondary"
+                  )}>
+                      <Link href={adminLink.href}>
+                          <adminLink.icon className="mr-2 h-4 w-4" />
+                          {adminLink.label}
+                      </Link>
+                  </Button>
+              )}
           </nav>
 
           <div className="flex items-center gap-4">

@@ -1,0 +1,7 @@
+// This is a list of user UIDs that have admin privileges.
+// Replace the placeholder with your actual Firebase User ID (UID).
+// You can find your UID in the Firebase console under Authentication > Users.
+// For multiple admins, add more UIDs to the array:
+// export const ADMIN_UIDS = ["your-uid-1", "another-admin-uid-2"];
+
+export const ADMIN_UIDS = ["REPLACE_WITH_YOUR_FIREBASE_USER_ID"];
