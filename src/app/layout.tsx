@@ -1,12 +1,27 @@
+
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider, useAppContext } from "@/context/AppContext";
 import { Toaster } from "@/components/ui/toaster";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "ColorCash",
   description: "A color betting simulation game.",
 };
+
+function AppBody({ children }: { children: React.ReactNode }) {
+  const { theme } = useAppContext();
+  return (
+    <body className={cn(
+      "font-body antialiased",
+      theme
+    )}>
+      {children}
+      <Toaster />
+    </body>
+  )
+}
 
 export default function RootLayout({
   children,
@@ -31,12 +46,25 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
-        <AppProvider>
-          {children}
-          <Toaster />
-        </AppProvider>
-      </body>
+      <AppProvider>
+        {/* We must wrap the component that uses the context hook in a client boundary */}
+        <ClientWrapper>{children}</ClientWrapper>
+      </AppProvider>
     </html>
   );
+}
+
+// This wrapper is a client component and can safely use the context.
+function ClientWrapper({ children }: { children: React.ReactNode }) {
+  "use client";
+  const { theme } = useAppContext();
+  return (
+    <body className={cn(
+      "font-body antialiased",
+      theme
+    )}>
+      {children}
+      <Toaster />
+    </body>
+  )
 }

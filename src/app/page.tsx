@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
 
+
 export default function LoginPage() {
   const { login } = useAppContext();
   const router = useRouter();

@@ -28,6 +28,7 @@ const convertTimestamps = (data: any) => {
   return data;
 }
 
+type Theme = 'dark' | 'dark-pro';
 
 interface AppContextType {
   isLoggedIn: boolean;
@@ -36,6 +37,8 @@ interface AppContextType {
   bets: Bet[];
   transactions: Transaction[];
   pendingTransactions: Transaction[]; // For admin
+  theme: Theme;
+  setTheme: (theme: Theme | string) => void;
   login: () => void;
   logout: () => void;
   placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
@@ -54,6 +57,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]); // For Admin
+  const [theme, setThemeState] = useState<Theme>('dark');
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -74,17 +78,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
+    const savedTheme = localStorage.getItem("colorcash-theme") as Theme | null;
     setIsLoggedIn(loggedInStatus);
+    if (savedTheme) {
+      setThemeState(savedTheme);
+    }
     setIsLoading(false);
   }, []);
   
-  // No more polling needed, data is fetched on demand via revalidatePath
   useEffect(() => {
     if(isLoggedIn){
       fetchData();
     }
   }, [isLoggedIn, fetchData]);
 
+  const setTheme = (newTheme: Theme | string) => {
+    if(newTheme === 'dark' || newTheme === 'dark-pro') {
+      setThemeState(newTheme as Theme);
+      localStorage.setItem("colorcash-theme", newTheme);
+    }
+  }
 
   const login = () => {
     setIsLoggedIn(true);
@@ -115,7 +128,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         title: result.isWin ? "You Won!" : "You Lost",
         description: result.message,
       });
-       // No manual fetchData needed, revalidatePath handles it.
     } else {
       toast({
         variant: "destructive",
@@ -123,7 +135,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         description: result.message,
       });
     }
-    await fetchData(); // Fetch data immediately after action
+    await fetchData(); 
   };
   
   const requestDeposit = async (amount: number, utr: string) => {
@@ -140,7 +152,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData(); // Fetch data immediately after action
+    await fetchData(); 
   };
 
   const requestWithdrawal = async (amount: number, upi: string) => {
@@ -157,7 +169,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData(); // Fetch data immediately after action
+    await fetchData();
   };
 
   const handleTransaction = async (transactionId: string, newStatus: 'approved' | 'rejected') => {
@@ -174,7 +186,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData(); // Fetch data immediately after action
+    await fetchData();
   };
 
   const value = {
@@ -184,6 +196,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     bets,
     transactions,
     pendingTransactions,
+    theme,
+    setTheme,
     login,
     logout,
     placeBet,

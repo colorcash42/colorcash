@@ -2,9 +2,19 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Moon, Sun } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -14,7 +24,7 @@ const navLinks = [
 ]
 
 export function Header() {
-  const { walletBalance, logout } = useAppContext();
+  const { walletBalance, logout, theme, setTheme } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -53,10 +63,36 @@ export function Header() {
               ₹{walletBalance.toFixed(2)}
             </span>
           </div>
-          <Button variant="outline" size="icon" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" />
-            <span className="sr-only">Logout</span>
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <User className="h-4 w-4" />
+                  <span className="sr-only">Open user menu</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">Theme</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+                <DropdownMenuRadioItem value="dark">
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Light</span>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark-pro">
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Dark Pro</span>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
         </div>
       </div>
     </header>
