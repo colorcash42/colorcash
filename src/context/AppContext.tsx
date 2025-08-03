@@ -37,6 +37,8 @@ interface AppContextType {
   isUserAdmin: boolean;
   viewAsAdmin: boolean;
   setViewAsAdmin: (viewAsAdmin: boolean) => void;
+  soundEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   logout: () => void;
@@ -58,6 +60,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [theme, setThemeState] = useState<Theme>('dark-pro');
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
+  const [soundEnabled, setSoundEnabledState] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -67,6 +70,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
+    }
+     const storedSound = localStorage.getItem("soundEnabled");
+    if (storedSound) {
+      setSoundEnabledState(JSON.parse(storedSound));
     }
     
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -84,6 +91,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setThemeState(theme);
     localStorage.setItem("theme", theme);
   };
+  
+  const setSoundEnabled = (enabled: boolean) => {
+    setSoundEnabledState(enabled);
+    localStorage.setItem("soundEnabled", JSON.stringify(enabled));
+  }
 
   const isLoggedIn = user !== null;
 
@@ -265,6 +277,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     isUserAdmin,
     viewAsAdmin,
     setViewAsAdmin,
+    soundEnabled,
+    setSoundEnabled,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

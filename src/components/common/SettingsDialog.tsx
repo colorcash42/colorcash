@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
-import { Moon, Sun, Shield } from "lucide-react";
+import { Moon, Sun, Shield, Volume2, VolumeX } from "lucide-react";
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
-  const { theme, setTheme, isUserAdmin, viewAsAdmin, setViewAsAdmin } = useAppContext();
+  const { theme, setTheme, isUserAdmin, viewAsAdmin, setViewAsAdmin, soundEnabled, setSoundEnabled } = useAppContext();
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -58,6 +58,30 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
                     </div>
                 </RadioGroup>
             </div>
+
+            <Separator />
+
+            <div>
+                <h3 className="mb-4 text-sm font-medium">Audio</h3>
+                 <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sound-mode" className="flex items-center gap-2">
+                      {soundEnabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}
+                      Sound Effects
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable or disable in-game sounds.
+                    </p>
+                  </div>
+                  <Switch
+                    id="sound-mode"
+                    checked={soundEnabled}
+                    onCheckedChange={setSoundEnabled}
+                  />
+                </div>
+              </div>
+
+
             {isUserAdmin && (
               <>
                 <Separator />

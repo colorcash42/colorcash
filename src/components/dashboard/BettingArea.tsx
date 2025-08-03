@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from '@/lib/utils';
+import { useSound } from '@/hooks/use-sound';
 
 
 type BetType = 'color' | 'number' | 'size' | 'trio';
@@ -82,6 +83,11 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [lastResult, setLastResult] = useState(null);
   const [lastBetAmount, setLastBetAmount] = useState(0);
+  
+  const playBetSound = useSound('/sounds/bet.mp3');
+  const playWinSound = useSound('/sounds/win.mp3');
+  const playLoseSound = useSound('/sounds/lose.mp3');
+
 
   const handleBet = async () => {
     const betAmount = parseFloat(amount);
@@ -103,12 +109,18 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
     }
     
     setIsLoading(true);
+    playBetSound();
     const response = await placeBet(betAmount, betType, betValue);
     
     if (response.success) {
       setLastResult(response.result);
       setLastBetAmount(betAmount);
       setIsResultOpen(true);
+      if (response.result.isWin) {
+        playWinSound();
+      } else {
+        playLoseSound();
+      }
     } else {
        toast({
         variant: "destructive",
