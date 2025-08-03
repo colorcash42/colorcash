@@ -64,8 +64,9 @@ function DepositForm() {
                     <Image 
                         src="/qrcode.png" 
                         alt="UPI QR Code for 8949956264@kotak" 
-                        layout="fill"
-                        objectFit="contain"
+                        width={192}
+                        height={192}
+                        className="object-contain"
                         data-ai-hint="qr code"
                     />
                  </div>
@@ -207,7 +208,7 @@ export function WalletTabs() {
             <CardDescription>
               Step 1: Pay using the QR code or UPI ID. After paying, submit the transaction details.
             </CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent>
             <DepositForm />
           </CardContent>
@@ -220,7 +221,7 @@ export function WalletTabs() {
             <CardDescription>
               Request a withdrawal to your UPI account.
             </CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent>
             <WithdrawalForm />
           </CardContent>
