@@ -79,13 +79,22 @@ export async function getPendingTransactions() {
 
 
 // --- MUTATION FUNCTIONS (SERVER ACTIONS) ---
+type BetType = 'color' | 'number' | 'size';
 
-export async function placeBetAction(userId: string, amount: number, color: string, colorHex: string) {
+interface BetResult {
+    isWin: boolean;
+    payout: number;
+    winningNumber: number;
+    winningColor: string;
+    winningSize: string;
+}
+
+export async function placeBetAction(userId: string, amount: number, betType: BetType, betValue: string | number): Promise<{ success: boolean; message: string; result?: BetResult; }> {
     try {
         const userDocRef = doc(db, "users", userId);
         const betsCollectionRef = collection(db, `users/${userId}/bets`);
 
-        const { isWin, payout, newBalance } = await runTransaction(db, async (transaction) => {
+        const betResult = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
             if (!userDoc.exists()) {
                 throw "User document does not exist!";
@@ -96,32 +105,82 @@ export async function placeBetAction(userId: string, amount: number, color: stri
                 throw "Insufficient balance";
             }
 
-            const isWin = Math.random() < 0.4; // 40% chance to win
-            const payout = isWin ? amount * 2 : 0;
+            // --- GAME LOGIC ---
+            const winningNumber = Math.floor(Math.random() * 10); // 0-9
+            let winningColor = '';
+            let winningSize = '';
+
+            // Determine Winning Color
+            if ([1, 3, 7, 9].includes(winningNumber)) {
+                winningColor = 'Green';
+            } else if ([2, 4, 6, 8].includes(winningNumber)) {
+                winningColor = 'Red';
+            } else if (winningNumber === 0) {
+                winningColor = 'VioletRed'; // Red + Violet
+            } else if (winningNumber === 5) {
+                winningColor = 'VioletGreen'; // Green + Violet
+            }
+
+            // Determine Winning Size
+            if (winningNumber >= 5 && winningNumber <= 9) {
+                winningSize = 'Big';
+            } else if (winningNumber >= 0 && winningNumber <= 4) {
+                winningSize = 'Small';
+            }
+
+            let isWin = false;
+            let payoutRate = 0;
+
+            if (betType === 'color') {
+                if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
+                    isWin = true;
+                    payoutRate = 4.5;
+                } else if (betValue === 'Red' && (winningColor === 'Red' || winningColor === 'VioletRed')) {
+                    isWin = true;
+                    payoutRate = (winningNumber === 0) ? 1.5 : 2;
+                } else if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) {
+                    isWin = true;
+                    payoutRate = (winningNumber === 5) ? 1.5 : 2;
+                }
+            } else if (betType === 'number') {
+                if (winningNumber === Number(betValue)) {
+                    isWin = true;
+                    payoutRate = 9;
+                }
+            } else if (betType === 'size') {
+                if (winningSize === betValue) {
+                    isWin = true;
+                    payoutRate = 2;
+                }
+            }
+            // --- END GAME LOGIC ---
+
+            const payout = isWin ? amount * payoutRate : 0;
             const newBalance = currentBalance - amount + payout;
 
             transaction.update(userDocRef, { walletBalance: newBalance });
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
-                color,
-                colorHex,
+                betType,
+                betValue,
+                color: betValue, // For history display
+                colorHex: '#FFFFFF', // Not used anymore, but kept for type safety
                 amount,
                 outcome: isWin ? "win" : "loss",
                 payout,
                 timestamp: serverTimestamp(),
             });
-
-            return { isWin, payout, newBalance };
+            
+            return { isWin, payout, newBalance, winningNumber, winningColor, winningSize };
         });
 
         revalidatePath('/dashboard');
 
         return { 
             success: true, 
-            isWin,
-            payout,
-            message: isWin ? `You won ₹${payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
+            result: betResult,
+            message: betResult.isWin ? `You won ₹${betResult.payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
         };
 
     } catch (e: any) {
@@ -129,6 +188,7 @@ export async function placeBetAction(userId: string, amount: number, color: stri
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
     }
 }
+
 
 export async function requestDepositAction(userId: string, amount: number, utr: string) {
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
@@ -177,7 +237,7 @@ export async function requestWithdrawalAction(userId: string, amount: number, up
     };
     
     const batch = writeBatch(db);
-    batch.set(doc(transactionsCollectionfRef), newTransaction);
+    batch.set(doc(transactionsCollectionRef), newTransaction);
     batch.set(doc(globalTransactionsCollectionRef), newTransaction);
     await batch.commit();
     
