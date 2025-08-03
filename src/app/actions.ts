@@ -93,6 +93,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
     try {
         const userDocRef = doc(db, "users", userId);
         const betsCollectionRef = collection(db, `users/${userId}/bets`);
+        const BIG_BET_THRESHOLD = 100;
 
         const betResult = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
@@ -106,7 +107,47 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             }
 
             // --- GAME LOGIC ---
-            const winningNumber = Math.floor(Math.random() * 10); // 0-9
+            let winningNumber: number;
+            const isBigBet = amount >= BIG_BET_THRESHOLD;
+            const shouldForceLoss = isBigBet && Math.random() < 0.9; // 90% chance to lose on big bets
+
+            if (shouldForceLoss) {
+                // Force a loss by generating a winning number that doesn't match the user's bet
+                const possibleNumbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+                let losingNumbers: number[];
+
+                if (betType === 'number') {
+                    losingNumbers = possibleNumbers.filter(n => n !== Number(betValue));
+                } else if (betType === 'color') {
+                    if (betValue === 'Green') losingNumbers = [0, 2, 4, 5, 6, 8]; // Avoid 1,3,7,9
+                    else if (betValue === 'Red') losingNumbers = [1, 3, 5, 7, 9]; // Avoid 0,2,4,6,8
+                    else if (betValue === 'Violet') losingNumbers = possibleNumbers.filter(n => n !== 0 && n !== 5);
+                    else losingNumbers = possibleNumbers; // Fallback
+                } else if (betType === 'size') {
+                     if (betValue === 'Big') losingNumbers = [0, 1, 2, 3, 4]; // Small numbers
+                     else losingNumbers = [5, 6, 7, 8, 9]; // Big numbers
+                } else if (betType === 'trio') {
+                    const trioMap: { [key: string]: number[] } = { 'trio1': [1, 4, 7], 'trio2': [2, 5, 8], 'trio3': [3, 6, 9] };
+                    const winningTrio = trioMap[betValue as string] || [];
+                    losingNumbers = possibleNumbers.filter(n => !winningTrio.includes(n));
+                } else {
+                    losingNumbers = possibleNumbers;
+                }
+                
+                if (losingNumbers.length === 0) {
+                    // This is a fallback in case the logic somehow filters all numbers.
+                    // It ensures the user doesn't automatically win.
+                    losingNumbers = possibleNumbers.filter(n => n !== Number(betValue));
+                }
+
+                winningNumber = losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
+
+            } else {
+                // Normal random generation for small bets or the 10% lucky chance on big bets
+                winningNumber = Math.floor(Math.random() * 10); // 0-9
+            }
+
+            
             let winningColor = '';
             let winningSize = '';
 
