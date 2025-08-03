@@ -139,7 +139,7 @@ function TransactionHistory() {
                                         <TableCell className='font-medium capitalize'>{t.type}</TableCell>
                                         <TableCell>₹{t.amount.toFixed(2)}</TableCell>
                                         <TableCell>
-                                            <Badge variant={t.status === 'approved' ? 'default' : t.status === 'rejected' ? 'destructive' : 'secondary'} className={t.status === 'approved' ? 'bg-green-500' : ''}>
+                                            <Badge variant={t.status === 'approved' ? 'default' : t.status === 'rejected' ? 'destructive' : 'secondary'}>
                                                 {t.status}
                                             </Badge>
                                         </TableCell>

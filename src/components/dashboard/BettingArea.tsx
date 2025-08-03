@@ -40,7 +40,7 @@ function BettingCard({ color, walletBalance }: { color: typeof betColors[0], wal
   };
 
   return (
-    <Card className="shadow-lg transition-transform hover:scale-105">
+    <Card className="shadow-lg transition-transform hover:scale-105 border-primary/20 hover:border-primary">
       <form onSubmit={handleBet}>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ function BettingCard({ color, walletBalance }: { color: typeof betColors[0], wal
           />
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
               <Gem className="mr-2 h-4 w-4" />

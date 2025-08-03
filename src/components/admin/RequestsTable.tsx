@@ -77,7 +77,7 @@ export function RequestsTable() {
                         {t.userId}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={t.type === 'deposit' ? "default" : "secondary"} className={t.type === 'deposit' ? 'bg-blue-500' : ''}>
+                      <Badge variant={t.type === 'deposit' ? "default" : "secondary"}>
                         {t.type}
                       </Badge>
                     </TableCell>
@@ -86,11 +86,11 @@ export function RequestsTable() {
                         {t.type === 'deposit' ? `UTR: ${t.utr}` : `UPI: ${t.upi}`}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700 hover:bg-green-100" onClick={() => onHandleTransaction(t.id, 'approved')}>
+                        <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={() => onHandleTransaction(t.id, 'approved')}>
                             <CheckCircle className="h-5 w-5" />
                             <span className="sr-only">Approve</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-100" onClick={() => onHandleTransaction(t.id, 'rejected')}>
+                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => onHandleTransaction(t.id, 'rejected')}>
                             <XCircle className="h-5 w-5" />
                             <span className="sr-only">Reject</span>
                         </Button>

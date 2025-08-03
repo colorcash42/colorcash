@@ -64,13 +64,13 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                         </TableCell>
                         <TableCell className="text-right tabular-nums">₹{bet.amount.toFixed(2)}</TableCell>
                         <TableCell className="text-center">
-                            <Badge variant={bet.outcome === 'win' ? "default" : "destructive"} className={bet.outcome === 'win' ? 'bg-green-500' : ''}>
+                            <Badge variant={bet.outcome === 'win' ? "default" : "destructive"}>
                                 {bet.outcome}
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-semibold"
                         >
-                            <span className={bet.outcome === 'win' ? 'text-green-600' : 'text-red-600'}>
+                            <span className={bet.outcome === 'win' ? 'text-primary' : 'text-destructive'}>
                                 {bet.outcome === 'win' ? '+' : '-'}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
                             </span>
                         </TableCell>

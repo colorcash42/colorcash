@@ -7,12 +7,12 @@ import { getFirestore } from "firebase/firestore";
 // Your web app's Firebase configuration
 // IMPORTANT: Replace this with your actual Firebase config
 const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyDA5awB3hajm6tJ4BiUjl_xVWOGqIM_p7c",
+  authDomain: "trivium-clash.firebaseapp.com",
+  projectId: "trivium-clash",
+  storageBucket: "trivium-clash.firebasestorage.app",
+  messagingSenderId: "23472719869",
+  appId: "1:23472719869:web:900e5bb9e4426eacc3fb94",
 };
 
 // Initialize Firebase
