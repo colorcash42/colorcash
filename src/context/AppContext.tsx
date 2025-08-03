@@ -28,7 +28,10 @@ const convertTimestamps = (data: any): any => {
     }
 
     // Firestore Timestamp check
-    if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
+    if (data.seconds !== undefined && data.nanoseconds !== undefined && typeof data.toDate === 'function') {
+        return data.toDate();
+    }
+     if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
         return new Date(data.seconds * 1000 + data.nanoseconds / 1000000);
     }
 
