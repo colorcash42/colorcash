@@ -190,7 +190,7 @@ function TransactionHistory() {
                 </div>
             </CardContent>
         </Card>
-    )
+    );
 }
 
 export function WalletTabs() {
