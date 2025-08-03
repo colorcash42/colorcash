@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils";
-import React, { useState } from "react";
-import { SettingsDialog } from "./SettingsDialog";
+import React from "react";
 
 const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: Gem },
@@ -27,7 +26,6 @@ export function Header() {
   const { walletBalance, logout } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -66,31 +64,14 @@ export function Header() {
               </span>
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <User className="h-4 w-4" />
-                    <span className="sr-only">Open user menu</span>
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsSettingsOpen(true)}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+             <Button onClick={handleLogout} variant="outline">
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
+            </Button>
 
           </div>
         </div>
       </header>
-      <SettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </>
   );
 }

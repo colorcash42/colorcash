@@ -28,8 +28,6 @@ const convertTimestamps = (data: any) => {
   return data;
 }
 
-type Theme = 'light' | 'dark' | 'dark-pro';
-
 interface AppContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
@@ -37,8 +35,6 @@ interface AppContextType {
   bets: Bet[];
   transactions: Transaction[];
   pendingTransactions: Transaction[]; // For admin
-  theme: Theme;
-  setTheme: (theme: Theme | string) => void;
   login: () => void;
   logout: () => void;
   placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
@@ -57,7 +53,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]); // For Admin
-  const [theme, setThemeState] = useState<Theme>('dark');
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -78,13 +73,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
-    const savedTheme = localStorage.getItem("colorcash-theme") as Theme | null;
     setIsLoggedIn(loggedInStatus);
-    if (savedTheme) {
-      setThemeState(savedTheme);
-    } else {
-      setThemeState('dark'); // Default to dark if no theme is saved
-    }
     setIsLoading(false);
   }, []);
   
@@ -93,13 +82,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       fetchData();
     }
   }, [isLoggedIn, fetchData]);
-
-  const setTheme = (newTheme: Theme | string) => {
-    if(newTheme === 'light' || newTheme === 'dark' || newTheme === 'dark-pro') {
-      setThemeState(newTheme as Theme);
-      localStorage.setItem("colorcash-theme", newTheme);
-    }
-  }
 
   const login = () => {
     setIsLoggedIn(true);
@@ -198,8 +180,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     bets,
     transactions,
     pendingTransactions,
-    theme,
-    setTheme,
     login,
     logout,
     placeBet,
