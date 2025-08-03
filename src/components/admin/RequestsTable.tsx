@@ -14,11 +14,32 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
+import { getPendingTransactions } from "@/app/actions";
+import { useEffect, useState } from "react";
+import { Transaction } from "@/lib/types";
 
 export function RequestsTable() {
-  const { transactions, handleTransaction } = useAppContext();
+  const { handleTransaction } = useAppContext();
+  const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
 
-  const pendingTransactions = transactions.filter(t => t.status === 'pending');
+  useEffect(() => {
+    // Fetch initial data, and re-fetch when context says so
+    const fetchPending = async () => {
+        const res = await getPendingTransactions();
+        setPendingTransactions(res.transactions);
+    };
+    fetchPending();
+
+    const interval = setInterval(fetchPending, 2000); // Poll every 2 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+
+  const onHandleTransaction = async (id: string, status: 'approved' | 'rejected') => {
+    await handleTransaction(id, status);
+    // Optimistically update UI
+    setPendingTransactions(prev => prev.filter(t => t.id !== id));
+  }
 
   return (
     <Card className="shadow-lg">
@@ -63,11 +84,11 @@ export function RequestsTable() {
                         {t.type === 'deposit' ? `UTR: ${t.utr}` : `UPI: ${t.upi}`}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700 hover:bg-green-100" onClick={() => handleTransaction(t.id, 'approved')}>
+                        <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700 hover:bg-green-100" onClick={() => onHandleTransaction(t.id, 'approved')}>
                             <CheckCircle className="h-5 w-5" />
                             <span className="sr-only">Approve</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-100" onClick={() => handleTransaction(t.id, 'rejected')}>
+                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-100" onClick={() => onHandleTransaction(t.id, 'rejected')}>
                             <XCircle className="h-5 w-5" />
                             <span className="sr-only">Reject</span>
                         </Button>

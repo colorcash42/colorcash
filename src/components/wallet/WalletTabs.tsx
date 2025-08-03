@@ -19,7 +19,7 @@ function DepositForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const depositAmount = parseFloat(amount);
         if (isNaN(depositAmount) || depositAmount <= 0) {
@@ -31,12 +31,10 @@ function DepositForm() {
             return;
         }
         setIsLoading(true);
-        setTimeout(() => {
-            requestDeposit(depositAmount, utr);
-            setAmount('');
-            setUtr('');
-            setIsLoading(false);
-        }, 1000);
+        await requestDeposit(depositAmount, utr);
+        setAmount('');
+        setUtr('');
+        setIsLoading(false);
     };
 
     return (
@@ -64,7 +62,7 @@ function WithdrawalForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const withdrawalAmount = parseFloat(amount);
         if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
@@ -76,12 +74,10 @@ function WithdrawalForm() {
             return;
         }
         setIsLoading(true);
-        setTimeout(() => {
-            requestWithdrawal(withdrawalAmount, upi);
-            setAmount('');
-            setUpi('');
-            setIsLoading(false);
-        }, 1000);
+        await requestWithdrawal(withdrawalAmount, upi);
+        setAmount('');
+        setUpi('');
+        setIsLoading(false);
     };
 
     return (

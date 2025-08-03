@@ -1,9 +1,18 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useTransition } from "react";
 import type { Bet, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  getWalletBalance, 
+  getBets, 
+  getTransactions, 
+  placeBetAction,
+  requestDepositAction,
+  requestWithdrawalAction,
+  handleTransactionAction
+} from "@/app/actions";
 
 interface AppContextType {
   isLoggedIn: boolean;
@@ -13,10 +22,10 @@ interface AppContextType {
   transactions: Transaction[];
   login: () => void;
   logout: () => void;
-  placeBet: (amount: number, color: string, colorHex: string) => void;
-  requestDeposit: (amount: number, utr: string) => void;
-  requestWithdrawal: (amount: number, upi: string) => void;
-  handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => void;
+  placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
+  requestDeposit: (amount: number, utr: string) => Promise<void>;
+  requestWithdrawal: (amount: number, upi: string) => Promise<void>;
+  handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,17 +33,35 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [walletBalance, setWalletBalance] = useState(1000);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { toast } = useToast();
 
+  const fetchData = async () => {
+    if (isLoggedIn) {
+      const [balanceRes, betsRes, transactionsRes] = await Promise.all([
+        getWalletBalance(),
+        getBets(),
+        getTransactions(),
+      ]);
+      setWalletBalance(balanceRes.balance);
+      setBets(betsRes.bets);
+      setTransactions(transactionsRes.transactions);
+    }
+  };
+
   useEffect(() => {
-    // Simulate checking auth status
     const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedInStatus);
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    if(isLoggedIn){
+      fetchData();
+    }
+  }, [isLoggedIn]);
 
   const login = () => {
     setIsLoggedIn(true);
@@ -54,106 +81,70 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const placeBet = (amount: number, color: string, colorHex: string) => {
-    if (amount > walletBalance) {
+  const placeBet = async (amount: number, color: string, colorHex: string) => {
+    const result = await placeBetAction(amount, color, colorHex);
+    if (result.success) {
+      toast({
+        title: result.isWin ? "You Won!" : "You Lost",
+        description: result.message,
+      });
+    } else {
       toast({
         variant: "destructive",
-        title: "Insufficient Balance",
-        description: "You don't have enough funds to place this bet.",
+        title: "Bet Failed",
+        description: result.message,
       });
-      return;
     }
-
-    // Make the win condition less predictable
-    const isWin = Math.random() < 0.4; // 40% chance to win
-    const payout = isWin ? amount * 2 : 0;
-    const newBalance = walletBalance - amount + payout;
-
-    setWalletBalance(newBalance);
-
-    const newBet: Bet = {
-      id: crypto.randomUUID(),
-      color,
-      colorHex,
-      amount,
-      outcome: isWin ? "win" : "loss",
-      payout,
-      timestamp: new Date(),
-    };
-
-    setBets((prev) => [newBet, ...prev]);
-
-    toast({
-      title: isWin ? "You Won!" : "You Lost",
-      description: isWin
-        ? `Congratulations! You won ₹${payout.toFixed(2)}.`
-        : `Better luck next time. You lost ₹${amount.toFixed(2)}.`,
-    });
+    // No need to call fetchData(), revalidatePath in action handles it
   };
   
-  const requestDeposit = (amount: number, utr: string) => {
-    const newTransaction: Transaction = {
-        id: crypto.randomUUID(),
-        type: 'deposit',
-        amount,
-        status: 'pending',
-        utr,
-        timestamp: new Date(),
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
-    toast({
-        title: 'Deposit Request Submitted',
-        description: `Your request to deposit ₹${amount.toFixed(2)} is pending approval.`
-    });
-  };
-
-  const requestWithdrawal = (amount: number, upi: string) => {
-    if (amount > walletBalance) {
+  const requestDeposit = async (amount: number, utr: string) => {
+    const result = await requestDepositAction(amount, utr);
+    if(result.success) {
         toast({
-            variant: "destructive",
-            title: "Insufficient Balance",
-            description: "You cannot withdraw more than your current balance.",
+            title: 'Deposit Request Submitted',
+            description: result.message
         });
-        return;
-    }
-    const newTransaction: Transaction = {
-        id: crypto.randomUUID(),
-        type: 'withdrawal',
-        amount,
-        status: 'pending',
-        upi,
-        timestamp: new Date(),
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
-    toast({
-        title: 'Withdrawal Request Submitted',
-        description: `Your request to withdraw ₹${amount.toFixed(2)} is pending approval.`
-    });
-  };
-
-  const handleTransaction = (transactionId: string, newStatus: 'approved' | 'rejected') => {
-    const transaction = transactions.find(t => t.id === transactionId);
-    if (!transaction) return;
-
-    setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, status: newStatus, processedTimestamp: new Date() } : t));
-
-    if (newStatus === 'approved') {
-        if (transaction.type === 'deposit') {
-            setWalletBalance(prev => prev + transaction.amount);
-            toast({ title: 'Deposit Approved', description: `₹${transaction.amount.toFixed(2)} has been added to your wallet.`});
-        } else if (transaction.type === 'withdrawal') {
-            setWalletBalance(prev => prev - transaction.amount);
-            toast({ title: 'Withdrawal Approved', description: `₹${transaction.amount.toFixed(2)} has been deducted from your wallet.`});
-        }
     } else {
         toast({
             variant: 'destructive',
-            title: `Transaction Rejected`,
-            description: `Your ${transaction.type} request of ₹${transaction.amount.toFixed(2)} was rejected.`
-        })
+            title: 'Request Failed',
+            description: result.message
+        });
     }
   };
 
+  const requestWithdrawal = async (amount: number, upi: string) => {
+    const result = await requestWithdrawalAction(amount, upi);
+     if(result.success) {
+        toast({
+            title: 'Withdrawal Request Submitted',
+            description: result.message
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Request Failed',
+            description: result.message
+        });
+    }
+  };
+
+  const handleTransaction = async (transactionId: string, newStatus: 'approved' | 'rejected') => {
+    const result = await handleTransactionAction(transactionId, newStatus);
+    if (result.success) {
+       toast({
+            title: `Transaction ${newStatus}`,
+            description: result.message
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Action Failed',
+            description: result.message
+        });
+    }
+  };
 
   const value = {
     isLoggedIn,

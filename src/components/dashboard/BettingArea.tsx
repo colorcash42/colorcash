@@ -21,7 +21,7 @@ function BettingCard({ color }: { color: typeof betColors[0] }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleBet = (e: React.FormEvent) => {
+  const handleBet = async (e: React.FormEvent) => {
     e.preventDefault();
     const betAmount = parseFloat(amount);
     if (isNaN(betAmount) || betAmount <= 0) {
@@ -34,12 +34,9 @@ function BettingCard({ color }: { color: typeof betColors[0] }) {
     }
     
     setIsLoading(true);
-    // Simulate game processing time
-    setTimeout(() => {
-        placeBet(betAmount, color.name, color.value);
-        setAmount('');
-        setIsLoading(false);
-    }, 1500);
+    await placeBet(betAmount, color.name, color.value);
+    setAmount('');
+    setIsLoading(false);
   };
 
   return (
