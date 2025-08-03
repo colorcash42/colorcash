@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { Toaster } from "@/components/ui/toaster";
+import { ClientWrapper } from "@/components/common/ClientWrapper";
 
 export const metadata: Metadata = {
   title: "ColorCash",
@@ -32,10 +33,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
+      <body>
         <AppProvider>
-          {children}
-          <Toaster />
+          <ClientWrapper>
+            {children}
+            <Toaster />
+          </ClientWrapper>
         </AppProvider>
       </body>
     </html>

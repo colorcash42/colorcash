@@ -28,6 +28,8 @@ const convertTimestamps = (data: any) => {
   return data;
 }
 
+type Theme = "light" | "dark" | "dark-pro";
+
 interface AppContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
@@ -35,6 +37,8 @@ interface AppContextType {
   bets: Bet[];
   transactions: Transaction[];
   pendingTransactions: Transaction[]; // For admin
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
   login: () => void;
   logout: () => void;
   placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
@@ -53,7 +57,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]); // For Admin
+  const [theme, setThemeState] = useState<Theme>('dark');
   const { toast } = useToast();
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme") as Theme | null;
+    if (storedTheme) {
+      setThemeState(storedTheme);
+    }
+    const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
+    setIsLoggedIn(loggedInStatus);
+    setIsLoading(false);
+  }, []);
+
+  const setTheme = (theme: Theme) => {
+    setThemeState(theme);
+    localStorage.setItem("theme", theme);
+  };
 
   const fetchData = useCallback(async () => {
     if (isLoggedIn) {
@@ -187,6 +207,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     requestWithdrawal,
     handleTransaction,
     fetchData,
+    theme,
+    setTheme,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

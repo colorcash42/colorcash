@@ -31,7 +31,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
         <div className="py-4">
             <h3 className="mb-4 text-sm font-medium">Theme</h3>
-            <RadioGroup value={theme} onValueChange={(value) => setTheme(value)}>
+            <RadioGroup value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'dark-pro')}>
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="light" id="theme-light" />
                     <Label htmlFor="theme-light" className="flex items-center gap-2">
@@ -43,7 +43,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
                     <RadioGroupItem value="dark" id="theme-dark" />
                     <Label htmlFor="theme-dark" className="flex items-center gap-2">
                         <Moon className="h-4 w-4" />
-                        Dark
+                        Dark (Original)
                     </Label>
                 </div>
                 <div className="flex items-center space-x-2">
