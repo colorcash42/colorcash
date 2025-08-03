@@ -1,28 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
 export const useSound = (soundUrl: string, volume: number = 0.5) => {
   const { soundEnabled } = useAppContext();
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // Audio is a browser-only API. Only initialize it on the client.
-    const audioInstance = new Audio(soundUrl);
-    audioInstance.volume = volume;
-    setAudio(audioInstance);
-  }, [soundUrl, volume]);
 
   const play = useCallback(() => {
-    if (soundEnabled && audio) {
-      audio.currentTime = 0; // Rewind to the start
-      audio.play().catch(error => {
-        // Autoplay was prevented.
-        console.error("Audio play failed:", error);
-      });
+    if (soundEnabled) {
+      try {
+        // Lazily create the audio object only when needed
+        const audio = new Audio(soundUrl);
+        audio.crossOrigin = "anonymous"; // Fix for cross-origin loading issues
+        audio.volume = volume;
+        audio.play().catch(error => {
+          // This catch block handles cases where autoplay is blocked by the browser,
+          // which is a common policy. It's not necessarily a critical error.
+          console.log(`Audio playback for ${soundUrl} was prevented. This is often expected browser behavior.`);
+        });
+      } catch (e) {
+        console.error(`Failed to play sound from ${soundUrl}:`, e);
+      }
     }
-  }, [audio, soundEnabled]);
+  }, [soundEnabled, soundUrl, volume]);
 
   return play;
 };
