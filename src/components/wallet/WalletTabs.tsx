@@ -28,7 +28,7 @@ function DepositForm() {
     const [utr, setUtr] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
-    const upiId = "your-company-upi@okbank"; // Replace with your actual UPI ID
+    const upiId = "8949956264@kotak"; // Updated UPI ID
 
     const handleCopy = () => {
         navigator.clipboard.writeText(upiId);
@@ -63,8 +63,8 @@ function DepositForm() {
                  {/* You should replace this with your actual QR code image */}
                  <div className="relative w-48 h-48 mb-4">
                     <Image 
-                        src="https://placehold.co/200x200.png" 
-                        alt="UPI QR Code" 
+                        src="https://placehold.co/300x300.png" 
+                        alt="UPI QR Code for 8949956264@kotak" 
                         layout="fill"
                         objectFit="contain"
                         data-ai-hint="qr code"
