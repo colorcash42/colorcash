@@ -44,6 +44,9 @@ interface AppContextType {
   pendingTransactions: Transaction[]; // For admin
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  isUserAdmin: boolean;
+  viewAsAdmin: boolean;
+  setViewAsAdmin: (viewAsAdmin: boolean) => void;
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   logout: () => void;
@@ -64,8 +67,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [theme, setThemeState] = useState<Theme>('dark');
+  const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
+
+  const isUserAdmin = user ? ADMIN_UIDS.includes(user.uid) : false;
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as Theme | null;
@@ -93,7 +99,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchData = useCallback(async () => {
     if (user) {
-      const isUserAdmin = ADMIN_UIDS.includes(user.uid);
+      const isAdmin = ADMIN_UIDS.includes(user.uid);
 
       // All users fetch their own data
       const [balanceRes, betsRes, transactionsRes] = await Promise.all([
@@ -107,7 +113,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setTransactions(transactionsRes.transactions.map(convertTimestamps));
 
       // Only admins fetch all pending transactions
-      if (isUserAdmin) {
+      if (isAdmin) {
         const pendingTransRes = await getPendingTransactions();
         setPendingTransactions(pendingTransRes.transactions.map(convertTimestamps));
       } else {
@@ -226,6 +232,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleTransaction = async (transactionId: string, newStatus: 'approved' | 'rejected') => {
+    if (!isUserAdmin) {
+        toast({variant: 'destructive', title: 'Permission Denied'});
+        return;
+    }
     const result = await handleTransactionAction(transactionId, newStatus);
     if (result.success) {
        toast({
@@ -260,6 +270,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchData,
     theme,
     setTheme,
+    isUserAdmin,
+    viewAsAdmin,
+    setViewAsAdmin,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

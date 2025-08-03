@@ -16,7 +16,6 @@ import {
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
-import { ADMIN_UIDS } from "@/lib/admins";
 
 const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: Gem },
@@ -27,17 +26,17 @@ const adminLink = { href: "/admin", label: "Admin", icon: ShieldCheck };
 
 
 export function Header() {
-  const { user, walletBalance, logout } = useAppContext();
+  const { user, walletBalance, logout, isUserAdmin, viewAsAdmin } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const isUserAdmin = user ? ADMIN_UIDS.includes(user.uid) : false;
 
   const handleLogout = () => {
     logout();
     router.push("/");
   };
+  
+  const showAdminLink = isUserAdmin && viewAsAdmin;
 
   return (
     <>
@@ -61,7 +60,7 @@ export function Header() {
                       </Link>
                   </Button>
               ))}
-              {isUserAdmin && (
+              {showAdminLink && (
                  <Button variant="ghost" asChild className={cn(
                       pathname === adminLink.href && "bg-secondary"
                   )}>

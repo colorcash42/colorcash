@@ -6,22 +6,21 @@ import { PageClientAuth } from "@/components/common/PageClientAuth";
 import { Header } from "@/components/common/Header";
 import { RequestsTable } from "@/components/admin/RequestsTable";
 import { useAppContext } from "@/context/AppContext";
-import { ADMIN_UIDS } from "@/lib/admins";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 
 export default function AdminPage() {
-  const { user } = useAppContext();
+  const { isUserAdmin, viewAsAdmin } = useAppContext();
   const router = useRouter();
 
-  const isAuthorized = user && ADMIN_UIDS.includes(user.uid);
+  const isAuthorized = isUserAdmin && viewAsAdmin;
 
   useEffect(() => {
     // If user data has loaded and they are not authorized, redirect.
-    if (user && !isAuthorized) {
+    if (!isAuthorized) {
       router.replace("/dashboard");
     }
-  }, [user, isAuthorized, router]);
+  }, [isAuthorized, router]);
 
   // If the user is not authorized, we can show a message or just nothing while redirecting.
   if (!isAuthorized) {
