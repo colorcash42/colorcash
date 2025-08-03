@@ -2,7 +2,7 @@ import { FieldValue } from "firebase/firestore";
 
 export type Bet = {
   id: string;
-  betType: "color" | "number" | "size";
+  betType: "color" | "number" | "size" | "trio";
   betValue: string | number;
   amount: number;
   outcome: "win" | "loss";
@@ -20,5 +20,3 @@ export type Transaction = {
   userId: string;
   timestamp: string; // Changed from Date | FieldValue to string for serialization
 };
-
-    

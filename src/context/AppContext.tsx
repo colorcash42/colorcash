@@ -22,7 +22,7 @@ import {
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
-type BetType = 'color' | 'number' | 'size';
+type BetType = 'color' | 'number' | 'size' | 'trio';
 
 interface AppContextType {
   user: User | null;
@@ -168,10 +168,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const placeBet = async (amount: number, betType: BetType, betValue: string | number) => {
-    if (!user) return;
+    if (!user) {
+      const failResult = { success: false, message: "User not logged in" };
+      toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
+      return failResult;
+    };
     const result = await placeBetAction(user.uid, amount, betType, betValue);
     
-    // We still show toast here, but we also return the result for the dialog
     if (!result.success) {
       toast({
         variant: "destructive",
@@ -274,5 +277,3 @@ export const useAppContext = () => {
   }
   return context;
 };
-
-    

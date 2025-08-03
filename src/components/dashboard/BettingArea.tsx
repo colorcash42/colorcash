@@ -18,7 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 
 
-type BetType = 'color' | 'number' | 'size';
+type BetType = 'color' | 'number' | 'size' | 'trio';
 type BetValue = string | number;
 
 function ResultDialog({ isOpen, onOpenChange, result, betAmount }) {
@@ -103,7 +103,9 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
     }
     
     setIsLoading(true);
-    const response = await placeBet(betAmount, betType, betValue);
+    // Determine the actual bet type for the action
+    const actionBetType = betType === 'number' ? (betValue === 0 ? 'number' : 'trio') : betType;
+    const response = await placeBet(betAmount, actionBetType, betValue);
     
     if (response.success) {
       setLastResult(response.result);
@@ -137,7 +139,7 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                             setBetType(val);
                             // Reset bet value when type changes
                             if (val === 'color') setBetValue('Green');
-                            if (val === 'number') setBetValue(0);
+                            if (val === 'number') setBetValue('trio1'); // Default to first trio
                             if (val === 'size') setBetValue('Small');
                         }
                     }} className="w-full">
@@ -158,16 +160,23 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                          </ToggleGroup>
                     )}
                      {betType === 'number' && (
-                         <ToggleGroup type="single" value={betValue.toString()} onValueChange={(val) => val && setBetValue(Number(val))} className="grid grid-cols-5 gap-2">
-                            {Array.from({length: 10}, (_, i) => i).map(num => (
-                                <ToggleGroupItem key={num} value={num.toString()}>{num}</ToggleGroupItem>
-                            ))}
+                         <ToggleGroup type="single" value={betValue.toString()} onValueChange={(val) => {
+                            if (val) {
+                                // check if the value is numeric (for the '0' button)
+                                const numericVal = Number(val);
+                                setBetValue(isNaN(numericVal) ? val : numericVal);
+                            }
+                         }} className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <ToggleGroupItem value="trio1" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Trio 1-4-7</ToggleGroupItem>
+                            <ToggleGroupItem value="trio2" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Trio 2-5-8</ToggleGroupItem>
+                            <ToggleGroupItem value="trio3" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Trio 3-6-9</ToggleGroupItem>
+                            <ToggleGroupItem value="0" className="bg-yellow-500/20 hover:bg-yellow-500/40 data-[state=on]:bg-yellow-500 data-[state=on]:text-white">0 (Jackpot)</ToggleGroupItem>
                          </ToggleGroup>
                     )}
                      {betType === 'size' && (
                          <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-2 gap-2">
-                           <ToggleGroupItem value="Small" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Small</ToggleGroupItem>
-                           <ToggleGroupItem value="Big" className="bg-yellow-500/20 hover:bg-yellow-500/40 data-[state=on]:bg-yellow-500 data-[state=on]:text-white">Big</ToggleGroupItem>
+                           <ToggleGroupItem value="Small" className="bg-indigo-500/20 hover:bg-indigo-500/40 data-[state=on]:bg-indigo-500 data-[state=on]:text-white">Small</ToggleGroupItem>
+                           <ToggleGroupItem value="Big" className="bg-orange-500/20 hover:bg-orange-500/40 data-[state=on]:bg-orange-500 data-[state=on]:text-white">Big</ToggleGroupItem>
                          </ToggleGroup>
                     )}
                 </div>

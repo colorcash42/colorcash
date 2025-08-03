@@ -79,7 +79,7 @@ export async function getPendingTransactions() {
 
 
 // --- MUTATION FUNCTIONS (SERVER ACTIONS) ---
-type BetType = 'color' | 'number' | 'size';
+type BetType = 'color' | 'number' | 'size' | 'trio';
 
 interface BetResult {
     isWin: boolean;
@@ -143,9 +143,19 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                     payoutRate = (winningNumber === 5) ? 1.5 : 2;
                 }
             } else if (betType === 'number') {
-                if (winningNumber === Number(betValue)) {
+                 if (winningNumber === Number(betValue)) {
                     isWin = true;
                     payoutRate = 9;
+                }
+            } else if (betType === 'trio') {
+                const trioMap: { [key: string]: number[] } = {
+                    'trio1': [1, 4, 7],
+                    'trio2': [2, 5, 8],
+                    'trio3': [3, 6, 9],
+                };
+                if (trioMap[betValue as string]?.includes(winningNumber)) {
+                    isWin = true;
+                    payoutRate = 3;
                 }
             } else if (betType === 'size') {
                 if (winningSize === betValue) {
@@ -307,5 +317,3 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred while processing the transaction." };
     }
 }
-
-    

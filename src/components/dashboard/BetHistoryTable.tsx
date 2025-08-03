@@ -35,7 +35,17 @@ const getBetDisplayValue = (bet: Bet) => {
                 {bet.betValue}
             </div>
         case 'number':
+             if (bet.betValue === 0) {
+                return <span className="font-mono font-medium bg-yellow-500/20 px-2 py-1 rounded">0 (Jackpot)</span>
+             }
              return <span className="font-mono font-medium">{bet.betValue}</span>
+        case 'trio':
+            const trioMap: { [key: string]: string } = {
+                'trio1': 'Trio 1-4-7',
+                'trio2': 'Trio 2-5-8',
+                'trio3': 'Trio 3-6-9',
+            };
+            return <span className="font-medium">{trioMap[bet.betValue as string] || bet.betValue}</span>
         case 'size':
             return <span className="font-medium">{bet.betValue}</span>
         default:
@@ -108,5 +118,3 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
     </Card>
   );
 }
-
-    
