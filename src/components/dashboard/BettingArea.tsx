@@ -15,8 +15,8 @@ const betColors = [
   { name: 'Blue', value: '#3b82f6', textColor: 'text-blue-500' },
 ];
 
-function BettingCard({ color }: { color: typeof betColors[0] }) {
-  const { placeBet, walletBalance } = useAppContext();
+function BettingCard({ color, walletBalance }: { color: typeof betColors[0], walletBalance: number }) {
+  const { placeBet } = useAppContext();
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -77,12 +77,14 @@ function BettingCard({ color }: { color: typeof betColors[0] }) {
   );
 }
 
-export function BettingArea() {
+export function BettingArea({ walletBalance }: { walletBalance: number }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {betColors.map((color) => (
-        <BettingCard key={color.name} color={color} />
+        <BettingCard key={color.name} color={color} walletBalance={walletBalance}/>
       ))}
     </div>
   );
 }
+
+    

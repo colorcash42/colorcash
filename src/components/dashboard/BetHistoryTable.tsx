@@ -12,9 +12,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import type { Bet } from "@/lib/types";
 
-export function BetHistoryTable() {
+export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
   const { bets } = useAppContext();
+
+  // Use the bets from context if available, otherwise use initialBets from server.
+  // This ensures the table updates after a new bet is placed.
+  const displayBets = bets.length > 0 ? bets : initialBets;
 
   return (
     <Card className="shadow-lg">
@@ -34,14 +39,14 @@ export function BetHistoryTable() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {bets.length === 0 ? (
+                {displayBets.length === 0 ? (
                     <TableRow>
                         <TableCell colSpan={5} className="text-center h-24">
                             You haven't placed any bets yet.
                         </TableCell>
                     </TableRow>
                 ) : (
-                    bets.map((bet) => (
+                    displayBets.map((bet) => (
                         <TableRow key={bet.id}>
                         <TableCell>
                             <div className="flex items-center gap-2 font-medium">
@@ -62,7 +67,7 @@ export function BetHistoryTable() {
                             </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground text-xs">
-                            {formatDistanceToNow(bet.timestamp, { addSuffix: true })}
+                            {formatDistanceToNow(new Date(bet.timestamp), { addSuffix: true })}
                         </TableCell>
                         </TableRow>
                     ))
@@ -74,3 +79,5 @@ export function BetHistoryTable() {
     </Card>
   );
 }
+
+    

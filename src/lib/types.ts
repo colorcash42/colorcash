@@ -5,7 +5,8 @@ export type Bet = {
   amount: number;
   outcome: "win" | "loss";
   payout: number;
-  timestamp: Date;
+  // Timestamps from server actions will be serialized as strings
+  timestamp: Date | string; 
 };
 
 export type Transaction = {
@@ -15,6 +16,9 @@ export type Transaction = {
   status: "pending" | "approved" | "rejected";
   utr?: string;
   upi?: string;
-  timestamp: Date;
-  processedTimestamp?: Date;
+  // Timestamps from server actions will be serialized as strings
+  timestamp: Date | string;
+  processedTimestamp?: Date | string;
 };
+
+    
