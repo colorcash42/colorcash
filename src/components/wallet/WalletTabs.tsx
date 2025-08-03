@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
@@ -27,6 +28,15 @@ function DepositForm() {
     const [utr, setUtr] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const upiId = "your-company-upi@okbank"; // Replace with your actual UPI ID
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(upiId);
+        toast({
+            title: "Copied!",
+            description: "UPI ID copied to clipboard.",
+        });
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,20 +57,48 @@ function DepositForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="deposit-amount">Amount</Label>
-                <Input id="deposit-amount" type="number" placeholder="e.g., 500" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} />
+        <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-secondary/50">
+                 <h3 className="text-lg font-semibold mb-4">Scan to Pay</h3>
+                 {/* You should replace this with your actual QR code image */}
+                 <div className="relative w-48 h-48 mb-4">
+                    <Image 
+                        src="https://placehold.co/200x200.png" 
+                        alt="UPI QR Code" 
+                        layout="fill"
+                        objectFit="contain"
+                        data-ai-hint="qr code"
+                    />
+                 </div>
+                 <div className="text-center">
+                    <p className="font-semibold text-sm">Or pay to UPI ID:</p>
+                    <div className="flex items-center gap-2 mt-1 bg-background p-2 rounded-md">
+                        <span className="font-mono text-sm">{upiId}</span>
+                        <Button variant="ghost" size="icon" onClick={handleCopy}>
+                            <Copy className="h-4 w-4"/>
+                        </Button>
+                    </div>
+                 </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="utr">UTR Number</Label>
-                <Input id="utr" type="text" placeholder="Transaction Reference Number" value={utr} onChange={e => setUtr(e.target.value)} required disabled={isLoading} />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowDownCircle className="mr-2 h-4 w-4" />}
-                {isLoading ? "Submitting..." : "Request Deposit"}
-            </Button>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                 <div>
+                    <h3 className="font-semibold">Step 2: Confirm Deposit</h3>
+                    <p className="text-sm text-muted-foreground">After paying, enter the details below to confirm your deposit.</p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="deposit-amount">Amount Deposited</Label>
+                    <Input id="deposit-amount" type="number" placeholder="e.g., 500" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="utr">UTR / Transaction ID</Label>
+                    <Input id="utr" type="text" placeholder="Enter the 12-digit UTR" value={utr} onChange={e => setUtr(e.target.value)} required disabled={isLoading} />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowDownCircle className="mr-2 h-4 w-4" />}
+                    {isLoading ? "Submitting..." : "Confirm Deposit"}
+                </Button>
+            </form>
+        </div>
     );
 }
 
@@ -100,7 +138,7 @@ function WithdrawalForm() {
                 <Input id="withdrawal-amount" type="number" placeholder="e.g., 200" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} max={walletBalance} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="upi">UPI ID</Label>
+                <Label htmlFor="upi">Your UPI ID for payment</Label>
                 <Input id="upi" type="text" placeholder="yourname@bank" value={upi} onChange={e => setUpi(e.target.value)} required disabled={isLoading} />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -168,7 +206,7 @@ export function WalletTabs() {
           <CardHeader>
             <CardTitle className='font-headline'>Deposit Funds</CardTitle>
             <CardDescription>
-              Add money to your wallet to start playing.
+              Step 1: Pay using the QR code or UPI ID. After paying, submit the transaction details.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -195,3 +233,5 @@ export function WalletTabs() {
     </Tabs>
   );
 }
+
+    
