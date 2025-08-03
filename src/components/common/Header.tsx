@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, Menu } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
@@ -38,17 +39,60 @@ export function Header() {
   
   const showAdminLink = isUserAdmin && viewAsAdmin;
 
+  const NavLink = ({ href, label, icon: Icon }: { href: string, label: string, icon: React.ElementType }) => (
+    <SheetClose asChild>
+      <Link href={href} className={cn(
+        "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
+        pathname === href && "text-foreground bg-accent rounded-md"
+      )}>
+        <Icon className="h-5 w-5" />
+        {label}
+      </Link>
+    </SheetClose>
+  );
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-              <CircleDollarSign className="h-8 w-8 text-primary" />
-              <span className="font-headline text-2xl font-bold tracking-tighter">
-              ColorCash
-              </span>
-          </Link>
+          
+          <div className="flex items-center gap-4">
+            {/* Mobile Navigation */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col">
+                <nav className="grid gap-6 text-lg font-medium">
+                  <SheetClose asChild>
+                    <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold mb-4">
+                      <CircleDollarSign className="h-8 w-8 text-primary" />
+                      <span className="font-headline tracking-tighter">ColorCash</span>
+                    </Link>
+                  </SheetClose>
+                  {navLinks.map((link) => (
+                    <NavLink key={link.href} href={link.href} label={link.label} icon={link.icon} />
+                  ))}
+                  {showAdminLink && (
+                    <NavLink href={adminLink.href} label={adminLink.label} icon={adminLink.icon} />
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
 
+            {/* Desktop Logo */}
+            <Link href="/dashboard" className="hidden md:flex items-center gap-2">
+                <CircleDollarSign className="h-8 w-8 text-primary" />
+                <span className="font-headline text-2xl font-bold tracking-tighter">
+                ColorCash
+                </span>
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
           <nav className="hidden items-center gap-2 md:flex">
               {navLinks.map((link) => (
                   <Button key={link.href} variant="ghost" asChild className={cn(
@@ -100,7 +144,6 @@ export function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
           </div>
         </div>
       </header>
