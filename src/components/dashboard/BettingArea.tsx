@@ -84,9 +84,9 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
   const [lastResult, setLastResult] = useState(null);
   const [lastBetAmount, setLastBetAmount] = useState(0);
   
-  const playBetSound = useSound('/sounds/bet.mp3');
-  const playWinSound = useSound('/sounds/win.mp3');
-  const playLoseSound = useSound('/sounds/lose.mp3');
+  const playBetSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fbet.mp3?alt=media&token=1434c114-53c7-4df3-92f7-234f59846114');
+  const playWinSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fwin.mp3?alt=media&token=1a80c655-5231-4122-8356-55447a166943');
+  const playLoseSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Flose.mp3?alt=media&token=e62925f4-3d0b-402a-9e12-07751910e53a');
 
 
   const handleBet = async () => {
