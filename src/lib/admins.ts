@@ -4,4 +4,4 @@
 // For multiple admins, add more UIDs to the array:
 // export const ADMIN_UIDS = ["your-uid-1", "another-admin-uid-2"];
 
-export const ADMIN_UIDS = ["REPLACE_WITH_YOUR_FIREBASE_USER_ID"];
+export const ADMIN_UIDS = ["taKVGzVJWmUI8XH3l6K0ec1RLuw1"];

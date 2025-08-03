@@ -8,6 +8,7 @@ import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndP
 import { auth } from "@/lib/firebase";
 import type { Bet, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { ADMIN_UIDS } from "@/lib/admins";
 import { 
   getWalletBalance, 
   getBets, 
@@ -92,19 +93,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchData = useCallback(async () => {
     if (user) {
-      const [balanceRes, betsRes, transactionsRes, pendingTransRes] = await Promise.all([
+      const isUserAdmin = ADMIN_UIDS.includes(user.uid);
+
+      // All users fetch their own data
+      const [balanceRes, betsRes, transactionsRes] = await Promise.all([
         getWalletBalance(user.uid),
         getBets(user.uid),
         getTransactions(user.uid),
-        getPendingTransactions(), // Admin function
       ]);
 
       setWalletBalance(balanceRes.balance);
       setBets(betsRes.bets.map(convertTimestamps));
       setTransactions(transactionsRes.transactions.map(convertTimestamps));
-      setPendingTransactions(pendingTransRes.transactions.map(convertTimestamps));
+
+      // Only admins fetch all pending transactions
+      if (isUserAdmin) {
+        const pendingTransRes = await getPendingTransactions();
+        setPendingTransactions(pendingTransRes.transactions.map(convertTimestamps));
+      } else {
+        setPendingTransactions([]); // Ensure non-admins have an empty list
+      }
     }
   }, [user]);
+
 
   useEffect(() => {
     if (isLoggedIn) {
