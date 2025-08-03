@@ -64,7 +64,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const isWin = Math.random() > 0.5;
+    // Make the win condition less predictable
+    const isWin = Math.random() < 0.4; // 40% chance to win
     const payout = isWin ? amount * 2 : 0;
     const newBalance = walletBalance - amount + payout;
 
