@@ -28,7 +28,7 @@ function DepositForm() {
     const [utr, setUtr] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
-    const upiId = "8949956264@kotak"; // Updated UPI ID
+    const upiId = "8949956264@kotak";
 
     const handleCopy = () => {
         navigator.clipboard.writeText(upiId);
@@ -60,10 +60,9 @@ function DepositForm() {
         <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-secondary/50">
                  <h3 className="text-lg font-semibold mb-4">Scan to Pay</h3>
-                 {/* You should replace this with your actual QR code image */}
                  <div className="relative w-48 h-48 mb-4">
                     <Image 
-                        src="https://placehold.co/300x300.png" 
+                        src="/qrcode.png" 
                         alt="UPI QR Code for 8949956264@kotak" 
                         layout="fill"
                         objectFit="contain"
@@ -208,7 +207,7 @@ export function WalletTabs() {
             <CardDescription>
               Step 1: Pay using the QR code or UPI ID. After paying, submit the transaction details.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
             <DepositForm />
           </CardContent>
@@ -221,7 +220,7 @@ export function WalletTabs() {
             <CardDescription>
               Request a withdrawal to your UPI account.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
             <WithdrawalForm />
           </CardContent>
