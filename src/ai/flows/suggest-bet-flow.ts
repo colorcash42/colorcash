@@ -9,7 +9,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { Bet } from '@/lib/types';
 
 // We only need a subset of the Bet type for the prompt.
 const BetHistoryItemSchema = z.object({
@@ -25,7 +24,7 @@ const SuggestBetInputSchema = z.object({
 export type SuggestBetInput = z.infer<typeof SuggestBetInputSchema>;
 
 const SuggestBetOutputSchema = z.object({
-    suggestion: z.string().describe("A playful, non-guaranteed suggestion for the user's next bet. Keep it short and engaging, like a wise guru would.")
+    suggestion: z.string().describe("उपयोगकर्ता के अगले दांव के लिए एक मज़ेदार, गैर-गारंटी वाली सलाह। इसे छोटा और आकर्षक रखें, जैसे कोई बुद्धिमान गुरु देगा। जवाब केवल हिंदी में होना चाहिए।")
 });
 export type SuggestBetOutput = z.infer<typeof SuggestBetOutputSchema>;
 
@@ -37,24 +36,24 @@ const prompt = ai.definePrompt({
   name: 'suggestBetPrompt',
   input: {schema: SuggestBetInputSchema},
   output: {schema: SuggestBetOutputSchema},
-  prompt: `You are the ColorCash Game Guru. Your role is to analyze a user's recent bet history and provide a playful, mysterious, and non-guaranteed suggestion for their next move.
+  prompt: `आप कलरकैश गेम गुरु हैं। आपकी भूमिका उपयोगकर्ता के हाल के दांव के इतिहास का विश्लेषण करना और उनकी अगली चाल के लिए एक मज़ेदार, रहस्यमय और गैर-गारंटी वाली सलाह प्रदान करना है। आपका जवाब हमेशा हिंदी में होना चाहिए।
 
-Do not mention that you are an AI. Speak like a wise, slightly cheeky oracle of the game.
+यह न बताएं कि आप एक AI हैं। खेल के एक बुद्धिमान, थोड़े चुलबुले दैवज्ञ की तरह बात करें।
 
-Analyze the provided bet history for patterns, streaks, or things that haven't occurred in a while. Based on your analysis, give a short, engaging piece of advice for the next round.
+पैटर्न, स्ट्रीक्स, या ऐसी चीजों के लिए दिए गए दांव के इतिहास का विश्लेषण करें जो कुछ समय से नहीं हुई हैं। अपने विश्लेषण के आधार पर, अगले दौर के लिए एक छोटी, आकर्षक सलाह दें।
 
-Betting Options are:
-- Color: Green, Red, Violet
-- Number: 0-9 (0 is a jackpot)
-- Trio: 'trio1' (1,4,7), 'trio2' (2,5,8), 'trio3' (3,6,9)
-- Size: Big (5-9), Small (0-4)
+दांव लगाने के विकल्प हैं:
+- रंग: हरा (Green), लाल (Red), बैंगनी (Violet)
+- नंबर: 0-9 (0 एक जैकपॉट है)
+- तिकड़ी (Trio): 'trio1' (1,4,7), 'trio2' (2,5,8), 'trio3' (3,6,9)
+- आकार: बड़ा (Big) (5-9), छोटा (Small) (0-4)
 
-Here is the user's recent history:
+यहाँ उपयोगकर्ता का हाल का इतिहास है:
 {{#each history}}
-- Bet on {{betValue}} (type: {{betType}}), Outcome: {{outcome}}, Payout: {{payout}}
+- {{betValue}} (प्रकार: {{betType}}) पर दांव, परिणाम: {{outcome}}, भुगतान: {{payout}}
 {{/each}}
 
-Now, provide your wisdom for the next round.`,
+अब, अगले दौर के लिए अपनी बुद्धिमत्ता प्रदान करें।`,
 });
 
 const suggestBetFlow = ai.defineFlow(
