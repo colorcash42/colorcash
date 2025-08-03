@@ -19,6 +19,7 @@ import {
   requestWithdrawalAction,
   handleTransactionAction,
   getPendingTransactions,
+  getGuruSuggestionAction
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
@@ -46,6 +47,7 @@ interface AppContextType {
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
+  getGuruSuggestion: () => Promise<string | undefined>;
   fetchData: () => Promise<void>; 
 }
 
@@ -262,6 +264,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     await fetchData();
   };
+  
+  const getGuruSuggestion = async () => {
+    if (!user) return;
+    const result = await getGuruSuggestionAction(bets);
+     if (result.suggestion) {
+       return result.suggestion;
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Guru is Busy',
+            description: result.error
+        });
+        return undefined;
+    }
+  }
+
 
   const value = {
     user,
@@ -278,6 +296,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     requestDeposit,
     requestWithdrawal,
     handleTransaction,
+    getGuruSuggestion,
     fetchData,
     theme,
     setTheme,

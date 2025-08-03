@@ -5,6 +5,7 @@ import type { Bet, Transaction } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp } from "firebase/firestore";
+import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 
 // --- HELPER FUNCTIONS ---
 
@@ -316,4 +317,15 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
         console.error("handleTransactionAction failed: ", e);
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred while processing the transaction." };
     }
+}
+
+
+export async function getGuruSuggestionAction(history: Bet[]): Promise<{ suggestion?: string, error?: string }> {
+  try {
+    const result = await suggestBet({ history });
+    return { suggestion: result.suggestion };
+  } catch (error) {
+    console.error('Error getting suggestion:', error);
+    return { error: 'Sorry, the guru is currently meditating. Please try again later.' };
+  }
 }

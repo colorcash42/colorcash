@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
-import { Gem, Loader2 } from 'lucide-react';
+import { Gem, Loader2, Wand2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Dialog,
@@ -15,6 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 import { cn } from '@/lib/utils';
 import { useSound } from '@/hooks/use-sound';
 
@@ -73,9 +78,11 @@ function ResultDialog({ isOpen, onOpenChange, result, betAmount }) {
 
 
 export function BettingArea({ walletBalance }: { walletBalance: number }) {
-  const { placeBet } = useAppContext();
+  const { placeBet, getGuruSuggestion } = useAppContext();
   const [amount, setAmount] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGuruLoading, setIsGuruLoading] = useState(false);
+  const [guruSuggestion, setGuruSuggestion] = useState<string | null>(null);
   const [betType, setBetType] = useState<BetType>('color');
   const [betValue, setBetValue] = useState<BetValue>('Green');
   const { toast } = useToast();
@@ -128,13 +135,24 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
         description: response.message,
       });
     }
-
+    // Clear suggestion after betting
+    setGuruSuggestion(null);
     setIsLoading(false);
   };
   
   const handlePresetAmount = (presetAmount: number) => {
     setAmount(current => (parseFloat(current || '0') + presetAmount).toString());
   };
+
+  const handleGetSuggestion = async () => {
+    setIsGuruLoading(true);
+    setGuruSuggestion(null);
+    const suggestion = await getGuruSuggestion();
+    if (suggestion) {
+        setGuruSuggestion(suggestion);
+    }
+    setIsGuruLoading(false);
+  }
 
   return (
     <>
@@ -213,6 +231,24 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                          <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(100)}>+100</Button>
                     </div>
                 </div>
+
+                {/* Guru Suggestion */}
+                <div className="space-y-2">
+                     <Button onClick={handleGetSuggestion} variant="outline" className="w-full" disabled={isGuruLoading || isLoading}>
+                        {isGuruLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
+                        {isGuruLoading ? 'Consulting the Guru...' : 'Get Guru Suggestion'}
+                    </Button>
+                    {guruSuggestion && (
+                        <Alert className="bg-accent/50 border-primary/50">
+                            <Wand2 className="h-4 w-4" />
+                            <AlertTitle className="font-headline">The Guru Says:</AlertTitle>
+                            <AlertDescription>
+                                {guruSuggestion}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                </div>
+
 
                 {/* Submit Button */}
                 <Button onClick={handleBet} className="w-full text-lg py-6" disabled={isLoading}>
