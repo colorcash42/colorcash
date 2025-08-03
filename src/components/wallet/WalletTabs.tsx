@@ -61,7 +61,7 @@ function DepositForm() {
                  <h3 className="text-lg font-semibold mb-4">Scan to Pay</h3>
                  <div className="relative w-48 h-48 mb-4">
                     <img 
-                        src="/qrcode.png" 
+                        src="/qrcode.jpg" 
                         alt="UPI QR Code for 8949956264@kotak" 
                         width="192"
                         height="192"
