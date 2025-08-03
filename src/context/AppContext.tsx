@@ -2,6 +2,10 @@
 
 import type { ReactNode } from "react";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import type { User } from "firebase/auth";
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import type { Bet, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -19,10 +23,9 @@ import {
 const convertTimestamps = (data: any) => {
   for (const key in data) {
     if (data[key] && typeof data[key] === 'object' && data[key].seconds) {
-      // Check for Firestore Timestamp signature
       data[key] = new Date(data[key].seconds * 1000);
     } else if (typeof data[key] === 'object' && data[key] !== null) {
-      convertTimestamps(data[key]); // Recurse into nested objects
+      convertTimestamps(data[key]);
     }
   }
   return data;
@@ -31,6 +34,7 @@ const convertTimestamps = (data: any) => {
 type Theme = "light" | "dark" | "dark-pro";
 
 interface AppContextType {
+  user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   walletBalance: number;
@@ -39,7 +43,8 @@ interface AppContextType {
   pendingTransactions: Transaction[]; // For admin
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  login: () => void;
+  login: (email: string, pass: string) => Promise<void>;
+  signup: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
@@ -51,37 +56,47 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]); // For Admin
+  const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [theme, setThemeState] = useState<Theme>('dark');
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
     }
-    const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(loggedInStatus);
-    setIsLoading(false);
-  }, []);
+    
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+      if (currentUser) {
+        router.push("/dashboard");
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [router]);
 
   const setTheme = (theme: Theme) => {
     setThemeState(theme);
     localStorage.setItem("theme", theme);
   };
 
+  const isLoggedIn = user !== null;
+
   const fetchData = useCallback(async () => {
-    if (isLoggedIn) {
+    if (user) {
       const [balanceRes, betsRes, transactionsRes, pendingTransRes] = await Promise.all([
-        getWalletBalance(),
-        getBets(),
-        getTransactions(),
-        getPendingTransactions(), // Fetch for admin panel
+        getWalletBalance(user.uid),
+        getBets(user.uid),
+        getTransactions(user.uid),
+        getPendingTransactions(), // Admin function
       ]);
 
       setWalletBalance(balanceRes.balance);
@@ -89,32 +104,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setTransactions(transactionsRes.transactions.map(convertTimestamps));
       setPendingTransactions(pendingTransRes.transactions.map(convertTimestamps));
     }
-  }, [isLoggedIn]);
+  }, [user]);
 
   useEffect(() => {
-    const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(loggedInStatus);
-    setIsLoading(false);
-  }, []);
-  
-  useEffect(() => {
-    if(isLoggedIn){
+    if (isLoggedIn) {
       fetchData();
     }
   }, [isLoggedIn, fetchData]);
 
-  const login = () => {
-    setIsLoggedIn(true);
-    sessionStorage.setItem("isLoggedIn", "true");
-    toast({
-      title: "Login Successful",
-      description: "Welcome to ColorCash!",
-    });
+  const login = async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      toast({
+        title: "Login Successful",
+        description: "Welcome back to ColorCash!",
+      });
+      // onAuthStateChanged will handle the redirect
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message,
+      });
+    }
   };
 
-  const logout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem("isLoggedIn");
+   const signup = async (email: string, pass: string) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, pass);
+      toast({
+        title: "Account Created",
+        description: "Welcome to ColorCash! You are now logged in.",
+      });
+      // onAuthStateChanged will handle user state and redirect
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description: error.message,
+      });
+    }
+  };
+
+
+  const logout = async () => {
+    await signOut(auth);
     setWalletBalance(0);
     setBets([]);
     setTransactions([]);
@@ -123,10 +157,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
+    router.push("/");
   };
 
   const placeBet = async (amount: number, color: string, colorHex: string) => {
-    const result = await placeBetAction(amount, color, colorHex);
+    if (!user) return;
+    const result = await placeBetAction(user.uid, amount, color, colorHex);
     if (result.success) {
       toast({
         title: result.isWin ? "You Won!" : "You Lost",
@@ -143,7 +179,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const requestDeposit = async (amount: number, utr: string) => {
-    const result = await requestDepositAction(amount, utr);
+    if (!user) return;
+    const result = await requestDepositAction(user.uid, amount, utr);
     if(result.success) {
         toast({
             title: 'Deposit Request Submitted',
@@ -160,7 +197,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const requestWithdrawal = async (amount: number, upi: string) => {
-    const result = await requestWithdrawalAction(amount, upi);
+    if (!user) return;
+    const result = await requestWithdrawalAction(user.uid, amount, upi);
      if(result.success) {
         toast({
             title: 'Withdrawal Request Submitted',
@@ -194,6 +232,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const value = {
+    user,
     isLoggedIn,
     isLoading,
     walletBalance,
@@ -201,6 +240,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     transactions,
     pendingTransactions,
     login,
+    signup,
     logout,
     placeBet,
     requestDeposit,

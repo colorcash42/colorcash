@@ -6,16 +6,16 @@ import { Loader2 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 
 export function PageClientAuth({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn, isLoading } = useAppContext();
+  const { user, isLoading } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
+    if (!isLoading && !user) {
       router.replace("/");
     }
-  }, [isLoggedIn, isLoading, router]);
+  }, [user, isLoading, router]);
 
-  if (isLoading || !isLoggedIn) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

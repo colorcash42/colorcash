@@ -1,16 +1,14 @@
-"use server";
+"use client";
 
+import { useEffect, useState } from "react";
 import { PageClientAuth } from "@/components/common/PageClientAuth";
 import { Header } from "@/components/common/Header";
 import { BettingArea } from "@/components/dashboard/BettingArea";
 import { BetHistoryTable } from "@/components/dashboard/BetHistoryTable";
-import { getBets, getWalletBalance } from "@/app/actions";
-import type { Bet } from "@/lib/types";
+import { useAppContext } from "@/context/AppContext";
 
-export default async function DashboardPage() {
-  // Fetch data on the server
-  const { bets } = await getBets();
-  const { balance } = await getWalletBalance();
+export default function DashboardPage() {
+  const { bets, walletBalance } = useAppContext();
 
   return (
     <PageClientAuth>
@@ -23,7 +21,7 @@ export default async function DashboardPage() {
                 <p className="text-muted-foreground">Choose a color and an amount to play.</p>
             </div>
             {/* Pass wallet balance to BettingArea */}
-            <BettingArea walletBalance={balance} />
+            <BettingArea walletBalance={walletBalance} />
             <div className="mt-12">
                 <h2 className="font-headline text-2xl md:text-3xl font-bold mb-4">Your Bet History</h2>
                 {/* Pass bets to BetHistoryTable */}
@@ -35,5 +33,3 @@ export default async function DashboardPage() {
     </PageClientAuth>
   );
 }
-
-    

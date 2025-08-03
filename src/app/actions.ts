@@ -5,55 +5,49 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where } from "firebase/firestore";
 
-// This is a hardcoded user ID for now. In a real multi-user app, 
-// this would come from an authentication system.
-const USER_ID = "user123"; 
-const USER_DOC_REF = doc(db, "users", USER_ID);
-const BETS_COLLECTION_REF = collection(db, `users/${USER_ID}/bets`);
-const TRANSACTIONS_COLLECTION_REF = collection(db, `users/${USER_ID}/transactions`);
-const GLOBAL_TRANSACTIONS_COLLECTION_REF = collection(db, "transactions");
-
-
 // Helper function to ensure user document exists
-async function ensureUserDocument() {
-    const userDoc = await getDoc(USER_DOC_REF);
+async function ensureUserDocument(userId: string) {
+    if (!userId) throw new Error("User not authenticated");
+    const userDocRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
         await writeBatch(db)
-            .set(USER_DOC_REF, { walletBalance: 1000, uid: USER_ID })
+            .set(userDocRef, { walletBalance: 1000, uid: userId })
             .commit();
     }
-    return userDoc;
+    return userDocRef;
 }
 
 
 // --- DATA ACCESS FUNCTIONS ---
 
-export async function getWalletBalance() {
-  await ensureUserDocument();
-  const userDoc = await getDoc(USER_DOC_REF);
-  // The user document is created with a balance of 1000 if it doesn't exist.
+export async function getWalletBalance(userId: string) {
+  const userDocRef = await ensureUserDocument(userId);
+  const userDoc = await getDoc(userDocRef);
   const balance = userDoc.data()?.walletBalance ?? 0;
   return { balance };
 }
 
-export async function getBets() {
-  await ensureUserDocument();
-  const q = query(BETS_COLLECTION_REF, orderBy("timestamp", "desc"));
+export async function getBets(userId: string) {
+  const betsCollectionRef = collection(db, `users/${userId}/bets`);
+  const q = query(betsCollectionRef, orderBy("timestamp", "desc"));
   const querySnapshot = await getDocs(q);
   const bets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
   return { bets };
 }
 
-export async function getTransactions() {
-  await ensureUserDocument();
-  const q = query(TRANSACTIONS_COLLECTION_REF, orderBy("timestamp", "desc"));
+export async function getTransactions(userId: string) {
+  const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
+  const q = query(transactionsCollectionRef, orderBy("timestamp", "desc"));
   const querySnapshot = await getDocs(q);
   const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
   return { transactions };
 }
 
+// This is an admin function, so it doesn't need userId from client
 export async function getPendingTransactions() {
-    const q = query(GLOBAL_TRANSACTIONS_COLLECTION_REF, where("status", "==", "pending"), orderBy("timestamp", "desc"));
+    const globalTransactionsCollectionRef = collection(db, "transactions");
+    const q = query(globalTransactionsCollectionRef, where("status", "==", "pending"), orderBy("timestamp", "desc"));
     const querySnapshot = await getDocs(q);
     const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
     return { transactions };
@@ -62,10 +56,13 @@ export async function getPendingTransactions() {
 
 // --- MUTATION FUNCTIONS (SERVER ACTIONS) ---
 
-export async function placeBetAction(amount: number, color: string, colorHex: string) {
+export async function placeBetAction(userId: string, amount: number, color: string, colorHex: string) {
     try {
+        const userDocRef = doc(db, "users", userId);
+        const betsCollectionRef = collection(db, `users/${userId}/bets`);
+
         const { isWin, payout, newBalance } = await runTransaction(db, async (transaction) => {
-            const userDoc = await transaction.get(USER_DOC_REF);
+            const userDoc = await transaction.get(userDocRef);
             if (!userDoc.exists()) {
                 throw "User document does not exist!";
             }
@@ -79,9 +76,9 @@ export async function placeBetAction(amount: number, color: string, colorHex: st
             const payout = isWin ? amount * 2 : 0;
             const newBalance = currentBalance - amount + payout;
 
-            transaction.update(USER_DOC_REF, { walletBalance: newBalance });
+            transaction.update(userDocRef, { walletBalance: newBalance });
 
-            const newBetRef = doc(BETS_COLLECTION_REF);
+            const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
                 color,
                 colorHex,
@@ -109,19 +106,23 @@ export async function placeBetAction(amount: number, color: string, colorHex: st
     }
 }
 
-export async function requestDepositAction(amount: number, utr: string) {
+export async function requestDepositAction(userId: string, amount: number, utr: string) {
+    const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
+    const globalTransactionsCollectionRef = collection(db, "transactions");
+
     const newTransaction: Omit<Transaction, "id" | "timestamp"> = {
         type: 'deposit',
         amount,
         status: 'pending',
         utr,
-        userId: USER_ID, // Store userId for admin handling
+        userId: userId, // Store userId for admin handling
         timestamp: serverTimestamp(),
     };
     
     const batch = writeBatch(db);
-    batch.set(doc(TRANSACTIONS_COLLECTION_REF), newTransaction);
-    batch.set(doc(GLOBAL_TRANSACTIONS_COLLECTION_REF), newTransaction);
+    // Add to user-specific and global collections
+    batch.set(doc(transactionsCollectionRef), newTransaction);
+    batch.set(doc(globalTransactionsCollectionRef), newTransaction);
     await batch.commit();
 
     revalidatePath('/wallet');
@@ -130,25 +131,30 @@ export async function requestDepositAction(amount: number, utr: string) {
     return { success: true, message: `Deposit request for ₹${amount.toFixed(2)} submitted.` };
 }
 
-export async function requestWithdrawalAction(amount: number, upi: string) {
-     const userDoc = await getDoc(USER_DOC_REF);
+export async function requestWithdrawalAction(userId: string, amount: number, upi: string) {
+     const userDocRef = doc(db, "users", userId);
+     const userDoc = await getDoc(userDocRef);
      const currentBalance = userDoc.data()?.walletBalance ?? 0;
 
     if (amount > currentBalance) {
         return { success: false, message: "Cannot withdraw more than current balance." };
     }
+
+    const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
+    const globalTransactionsCollectionRef = collection(db, "transactions");
+
     const newTransaction: Omit<Transaction, "id" | "timestamp"> = {
         type: 'withdrawal',
         amount,
         status: 'pending',
         upi,
-        userId: USER_ID, // Store userId for admin handling
+        userId: userId, // Store userId for admin handling
         timestamp: serverTimestamp(),
     };
     
     const batch = writeBatch(db);
-    batch.set(doc(TRANSACTIONS_COLLECTION_REF), newTransaction);
-    batch.set(doc(GLOBAL_TRANSACTIONS_COLLECTION_REF), newTransaction);
+    batch.set(doc(transactionsCollectionRef), newTransaction);
+    batch.set(doc(globalTransactionsCollectionRef), newTransaction);
     await batch.commit();
     
     revalidatePath('/wallet');
@@ -169,25 +175,36 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
 
             const transData = globalDoc.data() as Transaction;
             const userDocRef = doc(db, "users", transData.userId);
+            
+            // Find the user's transaction document to update it as well.
+            // This is a bit tricky without a unique ID shared between them.
+            // We'll query based on timestamp and amount, which is not foolproof but okay for this app.
             const userTransactionQuery = query(
                 collection(db, `users/${transData.userId}/transactions`), 
                 where("timestamp", "==", transData.timestamp),
-                where("amount", "==", transData.amount)
+                where("amount", "==", transData.amount),
+                where("type", "==", transData.type)
             );
             const userTransactionSnapshot = await getDocs(userTransactionQuery);
             if (userTransactionSnapshot.empty) {
-                throw "User's corresponding transaction not found.";
+                // This might happen if there's a slight time mismatch. For a real app,
+                // a more robust linking mechanism would be needed.
+                console.warn("User's corresponding transaction not found. Only updating global record.");
             }
-            const userTransactionRef = userTransactionSnapshot.docs[0].ref;
-
+            
             const userDoc = await transaction.get(userDocRef);
             if (!userDoc.exists()) {
                 throw "User to update not found";
             }
             
-            // Update both global and user-specific transaction docs
+            // Update global transaction doc
             transaction.update(globalTransactionRef, { status: newStatus, processedTimestamp: serverTimestamp() });
-            transaction.update(userTransactionRef, { status: newStatus, processedTimestamp: serverTimestamp() });
+            
+            // Update user-specific transaction doc if found
+            if (!userTransactionSnapshot.empty) {
+                 const userTransactionRef = userTransactionSnapshot.docs[0].ref;
+                 transaction.update(userTransactionRef, { status: newStatus, processedTimestamp: serverTimestamp() });
+            }
 
             if (newStatus === 'approved') {
                 const currentBalance = userDoc.data().walletBalance;
