@@ -1,6 +1,5 @@
 "use client";
 import { useState } from 'react';
-import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,13 +60,12 @@ function DepositForm() {
             <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-secondary/50">
                  <h3 className="text-lg font-semibold mb-4">Scan to Pay</h3>
                  <div className="relative w-48 h-48 mb-4">
-                    <Image 
+                    <img 
                         src="/qrcode.png" 
                         alt="UPI QR Code for 8949956264@kotak" 
-                        width={192}
-                        height={192}
+                        width="192"
+                        height="192"
                         className="object-contain"
-                        data-ai-hint="qr code"
                     />
                  </div>
                  <div className="text-center">
