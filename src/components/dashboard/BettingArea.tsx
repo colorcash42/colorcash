@@ -103,9 +103,7 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
     }
     
     setIsLoading(true);
-    // Determine the actual bet type for the action
-    const actionBetType = betType === 'number' ? (betValue === 0 ? 'number' : 'trio') : betType;
-    const response = await placeBet(betAmount, actionBetType, betValue);
+    const response = await placeBet(betAmount, betType, betValue);
     
     if (response.success) {
       setLastResult(response.result);
@@ -164,6 +162,7 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                             if (val) {
                                 // check if the value is numeric (for the '0' button)
                                 const numericVal = Number(val);
+                                setBetType(isNaN(numericVal) ? 'trio' : 'number');
                                 setBetValue(isNaN(numericVal) ? val : numericVal);
                             }
                          }} className="grid grid-cols-2 md:grid-cols-4 gap-2">

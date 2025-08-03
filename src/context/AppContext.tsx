@@ -56,7 +56,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
-  const [theme, setThemeState] = useState<Theme>('dark');
+  const [theme, setThemeState] = useState<Theme>('dark-pro');
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const { toast } = useToast();
   const router = useRouter();

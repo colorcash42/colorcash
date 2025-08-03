@@ -171,8 +171,14 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
             let isWin = false;
             let payoutRate = 0;
+            let finalBetType = betType;
 
-            if (betType === 'color') {
+            // Handle the composite bet type from the client
+            if (betType === 'number' && typeof betValue === 'string' && betValue.startsWith('trio')) {
+              finalBetType = 'trio';
+            }
+
+            if (finalBetType === 'color') {
                 if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
                     isWin = true;
                     payoutRate = 4.5;
@@ -183,12 +189,12 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                     isWin = true;
                     payoutRate = (winningNumber === 5) ? 1.5 : 2;
                 }
-            } else if (betType === 'number') {
+            } else if (finalBetType === 'number') {
                  if (winningNumber === Number(betValue)) {
                     isWin = true;
                     payoutRate = 9;
                 }
-            } else if (betType === 'trio') {
+            } else if (finalBetType === 'trio') {
                 const trioMap: { [key: string]: number[] } = {
                     'trio1': [1, 4, 7],
                     'trio2': [2, 5, 8],
@@ -198,7 +204,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                     isWin = true;
                     payoutRate = 3;
                 }
-            } else if (betType === 'size') {
+            } else if (finalBetType === 'size') {
                 if (winningSize === betValue) {
                     isWin = true;
                     payoutRate = 2;
@@ -213,7 +219,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
-                betType,
+                betType: finalBetType,
                 betValue,
                 amount,
                 outcome: isWin ? "win" : "loss",
@@ -221,7 +227,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                 timestamp: serverTimestamp(),
             });
             
-            return { isWin, payout, newBalance, winningNumber, winningColor, winningSize };
+            return { isWin, payout, winningNumber, winningColor, winningSize };
         });
 
         revalidatePath('/dashboard');
