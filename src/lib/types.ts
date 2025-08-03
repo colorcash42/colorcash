@@ -1,3 +1,5 @@
+import { FieldValue } from "firebase/firestore";
+
 export type Bet = {
   id: string;
   color: string;
@@ -5,8 +7,8 @@ export type Bet = {
   amount: number;
   outcome: "win" | "loss";
   payout: number;
-  // Timestamps from server actions will be serialized as strings
-  timestamp: Date | string; 
+  // Firestore timestamps can be Date or FieldValue
+  timestamp: Date | FieldValue; 
 };
 
 export type Transaction = {
@@ -16,9 +18,8 @@ export type Transaction = {
   status: "pending" | "approved" | "rejected";
   utr?: string;
   upi?: string;
-  // Timestamps from server actions will be serialized as strings
-  timestamp: Date | string;
-  processedTimestamp?: Date | string;
+  userId: string;
+  // Firestore timestamps can be Date or FieldValue
+  timestamp: Date | FieldValue;
+  processedTimestamp?: Date | FieldValue;
 };
-
-    

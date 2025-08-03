@@ -11,8 +11,23 @@ import {
   placeBetAction,
   requestDepositAction,
   requestWithdrawalAction,
-  handleTransactionAction
+  handleTransactionAction,
+  getPendingTransactions,
 } from "@/app/actions";
+
+// Helper function to convert Firestore server timestamps to JS Dates
+const convertTimestamps = (data: any) => {
+  for (const key in data) {
+    if (data[key] && typeof data[key] === 'object' && data[key].seconds) {
+      // Check for Firestore Timestamp signature
+      data[key] = new Date(data[key].seconds * 1000);
+    } else if (typeof data[key] === 'object' && data[key] !== null) {
+      convertTimestamps(data[key]); // Recurse into nested objects
+    }
+  }
+  return data;
+}
+
 
 interface AppContextType {
   isLoggedIn: boolean;
@@ -20,13 +35,13 @@ interface AppContextType {
   walletBalance: number;
   bets: Bet[];
   transactions: Transaction[];
+  pendingTransactions: Transaction[]; // For admin
   login: () => void;
   logout: () => void;
   placeBet: (amount: number, color: string, colorHex: string) => Promise<void>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
-  // This function will be exposed to allow components to trigger a manual refresh.
   fetchData: () => Promise<void>; 
 }
 
@@ -38,20 +53,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]); // For Admin
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
     if (isLoggedIn) {
-      // console.log("Fetching data...");
-      const [balanceRes, betsRes, transactionsRes] = await Promise.all([
+      const [balanceRes, betsRes, transactionsRes, pendingTransRes] = await Promise.all([
         getWalletBalance(),
         getBets(),
         getTransactions(),
+        getPendingTransactions(), // Fetch for admin panel
       ]);
+
       setWalletBalance(balanceRes.balance);
-      setBets(betsRes.bets);
-      setTransactions(transactionsRes.transactions);
-      // console.log("Data fetched: ", {balance: balanceRes.balance, bets: betsRes.bets.length, transactions: transactionsRes.transactions.length});
+      setBets(betsRes.bets.map(convertTimestamps));
+      setTransactions(transactionsRes.transactions.map(convertTimestamps));
+      setPendingTransactions(pendingTransRes.transactions.map(convertTimestamps));
     }
   }, [isLoggedIn]);
 
@@ -61,12 +78,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
   
-  // Initial fetch and setup polling
+  // No more polling needed, data is fetched on demand via revalidatePath
   useEffect(() => {
     if(isLoggedIn){
       fetchData();
-      const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
-      return () => clearInterval(interval);
     }
   }, [isLoggedIn, fetchData]);
 
@@ -86,6 +101,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setWalletBalance(0);
     setBets([]);
     setTransactions([]);
+    setPendingTransactions([]);
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
@@ -99,6 +115,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         title: result.isWin ? "You Won!" : "You Lost",
         description: result.message,
       });
+       // No manual fetchData needed, revalidatePath handles it.
     } else {
       toast({
         variant: "destructive",
@@ -106,7 +123,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         description: result.message,
       });
     }
-    await fetchData();
+    await fetchData(); // Fetch data immediately after action
   };
   
   const requestDeposit = async (amount: number, utr: string) => {
@@ -123,7 +140,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData();
+    await fetchData(); // Fetch data immediately after action
   };
 
   const requestWithdrawal = async (amount: number, upi: string) => {
@@ -140,7 +157,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData();
+    await fetchData(); // Fetch data immediately after action
   };
 
   const handleTransaction = async (transactionId: string, newStatus: 'approved' | 'rejected') => {
@@ -157,7 +174,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData();
+    await fetchData(); // Fetch data immediately after action
   };
 
   const value = {
@@ -166,6 +183,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     walletBalance,
     bets,
     transactions,
+    pendingTransactions,
     login,
     logout,
     placeBet,

@@ -14,6 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 
+// Helper function to convert Firestore Timestamp to Date
+const toDate = (timestamp: any): Date => {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  return new Date(timestamp);
+};
+
 export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
   const { bets } = useAppContext();
 
@@ -67,7 +75,7 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                             </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground text-xs">
-                            {formatDistanceToNow(new Date(bet.timestamp), { addSuffix: true })}
+                           {bet.timestamp ? formatDistanceToNow(toDate(bet.timestamp), { addSuffix: true }) : 'Just now'}
                         </TableCell>
                         </TableRow>
                     ))
@@ -79,5 +87,3 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
     </Card>
   );
 }
-
-    

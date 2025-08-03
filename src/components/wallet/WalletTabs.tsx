@@ -12,6 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 
+// Helper function to convert Firestore Timestamp to Date
+const toDate = (timestamp: any): Date => {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  return new Date(timestamp);
+};
+
+
 function DepositForm() {
     const { requestDeposit } = useAppContext();
     const [amount, setAmount] = useState('');
@@ -56,7 +65,7 @@ function DepositForm() {
 }
 
 function WithdrawalForm() {
-    const { requestWithdrawal } = useAppContext();
+    const { requestWithdrawal, walletBalance } = useAppContext();
     const [amount, setAmount] = useState('');
     const [upi, setUpi] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +76,10 @@ function WithdrawalForm() {
         const withdrawalAmount = parseFloat(amount);
         if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
             toast({ variant: 'destructive', title: 'Invalid amount' });
+            return;
+        }
+        if (withdrawalAmount > walletBalance) {
+            toast({ variant: 'destructive', title: 'Insufficient balance' });
             return;
         }
         if (!upi) {
@@ -84,7 +97,7 @@ function WithdrawalForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="withdrawal-amount">Amount</Label>
-                <Input id="withdrawal-amount" type="number" placeholder="e.g., 200" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} />
+                <Input id="withdrawal-amount" type="number" placeholder="e.g., 200" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} max={walletBalance} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="upi">UPI ID</Label>
@@ -130,7 +143,7 @@ function TransactionHistory() {
                                                 {t.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className='text-right text-xs text-muted-foreground'>{format(t.timestamp, 'PP pp')}</TableCell>
+                                        <TableCell className='text-right text-xs text-muted-foreground'>{t.timestamp ? format(toDate(t.timestamp), 'PP pp') : ''}</TableCell>
                                     </TableRow>
                                 ))
                             )}

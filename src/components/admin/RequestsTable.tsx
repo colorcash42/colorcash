@@ -14,15 +14,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Transaction } from "@/lib/types";
 
-export function RequestsTable() {
-  const { handleTransaction, transactions } = useAppContext();
+// Helper function to convert Firestore Timestamp to Date
+const toDate = (timestamp: any): Date => {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  return new Date(timestamp);
+};
 
-  const pendingTransactions = useMemo(() => {
-    return transactions.filter(t => t.status === 'pending');
-  }, [transactions]);
+
+export function RequestsTable() {
+  const { handleTransaction, transactions, pendingTransactions } = useAppContext();
+
+  // We will now receive pending transactions from context directly to improve consistency
+  const sortedPendingTransactions = useMemo(() => {
+    return [...pendingTransactions].sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
+  }, [pendingTransactions]);
 
 
   const onHandleTransaction = async (id: string, status: 'approved' | 'rejected') => {
@@ -43,6 +53,7 @@ export function RequestsTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>User ID</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Details</TableHead>
@@ -50,17 +61,20 @@ export function RequestsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingTransactions.length === 0 ? (
+              {sortedPendingTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No pending requests.
                   </TableCell>
                 </TableRow>
               ) : (
-                pendingTransactions.map((t) => (
+                sortedPendingTransactions.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="text-xs text-muted-foreground">
-                        {format(t.timestamp, 'PP')}
+                        {t.timestamp ? format(toDate(t.timestamp), 'PP') : 'No date'}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-mono">
+                        {t.userId}
                     </TableCell>
                     <TableCell>
                       <Badge variant={t.type === 'deposit' ? "default" : "secondary"} className={t.type === 'deposit' ? 'bg-blue-500' : ''}>
