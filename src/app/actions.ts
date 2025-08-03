@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { Bet, Transaction } from "@/lib/types";
@@ -93,7 +94,6 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
     try {
         const userDocRef = doc(db, "users", userId);
         const betsCollectionRef = collection(db, `users/${userId}/bets`);
-        const BIG_BET_THRESHOLD = 100;
 
         const betResult = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
@@ -105,49 +105,12 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             if (amount > currentBalance) {
                 throw "Insufficient balance";
             }
-
-            // --- GAME LOGIC ---
-            let winningNumber: number;
-            const isBigBet = amount >= BIG_BET_THRESHOLD;
-            const shouldForceLoss = isBigBet && Math.random() < 0.9; // 90% chance to lose on big bets
-
-            if (shouldForceLoss) {
-                // Force a loss by generating a winning number that doesn't match the user's bet
-                const possibleNumbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-                let losingNumbers: number[];
-
-                if (betType === 'number') {
-                    losingNumbers = possibleNumbers.filter(n => n !== Number(betValue));
-                } else if (betType === 'color') {
-                    if (betValue === 'Green') losingNumbers = [0, 2, 4, 5, 6, 8]; // Avoid 1,3,7,9
-                    else if (betValue === 'Red') losingNumbers = [1, 3, 5, 7, 9]; // Avoid 0,2,4,6,8
-                    else if (betValue === 'Violet') losingNumbers = possibleNumbers.filter(n => n !== 0 && n !== 5);
-                    else losingNumbers = possibleNumbers; // Fallback
-                } else if (betType === 'size') {
-                     if (betValue === 'Big') losingNumbers = [0, 1, 2, 3, 4]; // Small numbers
-                     else losingNumbers = [5, 6, 7, 8, 9]; // Big numbers
-                } else if (betType === 'trio') {
-                    const trioMap: { [key: string]: number[] } = { 'trio1': [1, 4, 7], 'trio2': [2, 5, 8], 'trio3': [3, 6, 9] };
-                    const winningTrio = trioMap[betValue as string] || [];
-                    losingNumbers = possibleNumbers.filter(n => !winningTrio.includes(n));
-                } else {
-                    losingNumbers = possibleNumbers;
-                }
-                
-                if (losingNumbers.length === 0) {
-                    // This is a fallback in case the logic somehow filters all numbers.
-                    // It ensures the user doesn't automatically win.
-                    losingNumbers = possibleNumbers.filter(n => n !== Number(betValue));
-                }
-
-                winningNumber = losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
-
-            } else {
-                // Normal random generation for small bets or the 10% lucky chance on big bets
-                winningNumber = Math.floor(Math.random() * 10); // 0-9
-            }
-
             
+            // --- FAIR GAME LOGIC ---
+            // The logic for biased results based on bet amount has been removed.
+            // Every bet now has the same fair chance of winning based on the game rules.
+            const winningNumber = Math.floor(Math.random() * 10); // 0-9. Fair for all bets.
+
             let winningColor = '';
             let winningSize = '';
 
@@ -171,14 +134,8 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
             let isWin = false;
             let payoutRate = 0;
-            let finalBetType = betType;
 
-            // Handle the composite bet type from the client
-            if (betType === 'number' && typeof betValue === 'string' && betValue.startsWith('trio')) {
-              finalBetType = 'trio';
-            }
-
-            if (finalBetType === 'color') {
+            if (betType === 'color') {
                 if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
                     isWin = true;
                     payoutRate = 4.5;
@@ -189,12 +146,12 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                     isWin = true;
                     payoutRate = (winningNumber === 5) ? 1.5 : 2;
                 }
-            } else if (finalBetType === 'number') {
+            } else if (betType === 'number') {
                  if (winningNumber === Number(betValue)) {
                     isWin = true;
                     payoutRate = 9;
                 }
-            } else if (finalBetType === 'trio') {
+            } else if (betType === 'trio') {
                 const trioMap: { [key: string]: number[] } = {
                     'trio1': [1, 4, 7],
                     'trio2': [2, 5, 8],
@@ -204,7 +161,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                     isWin = true;
                     payoutRate = 3;
                 }
-            } else if (finalBetType === 'size') {
+            } else if (betType === 'size') {
                 if (winningSize === betValue) {
                     isWin = true;
                     payoutRate = 2;
@@ -219,7 +176,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
-                betType: finalBetType,
+                betType,
                 betValue,
                 amount,
                 outcome: isWin ? "win" : "loss",
@@ -258,10 +215,13 @@ export async function requestDepositAction(userId: string, amount: number, utr: 
         timestamp: serverTimestamp(),
     };
     
+    // Add to user-specific and global collections using auto-generated IDs
+    const userTransactionDocRef = doc(transactionsCollectionRef);
+    const globalDocRef = doc(globalTransactionsCollectionRef);
+
     const batch = writeBatch(db);
-    // Add to user-specific and global collections
-    batch.set(doc(transactionsCollectionRef), newTransaction);
-    batch.set(doc(globalTransactionsCollectionRef), newTransaction);
+    batch.set(userTransactionDocRef, newTransaction);
+    batch.set(globalDocRef, { ...newTransaction, userTransactionId: userTransactionDocRef.id, id: globalDocRef.id }); // Add cross-reference
     await batch.commit();
 
     revalidatePath('/wallet');
@@ -291,9 +251,12 @@ export async function requestWithdrawalAction(userId: string, amount: number, up
         timestamp: serverTimestamp(),
     };
     
+    const userTransactionDocRef = doc(transactionsCollectionRef);
+    const globalDocRef = doc(globalTransactionsCollectionRef);
+
     const batch = writeBatch(db);
-    batch.set(doc(transactionsCollectionRef), newTransaction);
-    batch.set(doc(globalTransactionsCollectionRef), newTransaction);
+    batch.set(userTransactionDocRef, newTransaction);
+    batch.set(globalDocRef, { ...newTransaction, userTransactionId: userTransactionDocRef.id, id: globalDocRef.id });
     await batch.commit();
     
     revalidatePath('/wallet');
@@ -311,21 +274,14 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
             if (!globalDoc.exists()) {
                 throw "Transaction not found.";
             }
-
-            const transData = globalDoc.data() as Transaction & { timestamp: Timestamp }; // Cast to include Firestore Timestamp
-            const userDocRef = doc(db, "users", transData.userId);
-            
-            const userTransactionQuery = query(
-                collection(db, `users/${transData.userId}/transactions`), 
-                where("timestamp", "==", transData.timestamp),
-                where("amount", "==", transData.amount),
-                where("type", "==", transData.type)
-            );
-            const userTransactionSnapshot = await getDocs(userTransactionQuery);
-            if (userTransactionSnapshot.empty) {
-                console.warn("User's corresponding transaction not found. Only updating global record.");
+             if (globalDoc.data().status !== 'pending') {
+                throw "This transaction has already been processed.";
             }
-            
+
+            const transData = globalDoc.data() as Transaction;
+            const userDocRef = doc(db, "users", transData.userId);
+            const userTransactionRef = doc(db, `users/${transData.userId}/transactions`, transData.userTransactionId!);
+
             const userDoc = await transaction.get(userDocRef);
             if (!userDoc.exists()) {
                 throw "User to update not found";
@@ -334,11 +290,8 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
             // Update global transaction doc
             transaction.update(globalTransactionRef, { status: newStatus });
             
-            // Update user-specific transaction doc if found
-            if (!userTransactionSnapshot.empty) {
-                 const userTransactionRef = userTransactionSnapshot.docs[0].ref;
-                 transaction.update(userTransactionRef, { status: newStatus });
-            }
+            // Update user-specific transaction doc
+            transaction.update(userTransactionRef, { status: newStatus });
 
             if (newStatus === 'approved') {
                 const currentBalance = userDoc.data().walletBalance;

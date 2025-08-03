@@ -12,10 +12,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { useMemo } from "react";
-import { Transaction } from "@/lib/types";
+import { useMemo, useState } from "react";
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -27,9 +26,9 @@ const toDate = (timestamp: string | Date): Date => {
 
 
 export function RequestsTable() {
-  const { handleTransaction, transactions, pendingTransactions } = useAppContext();
+  const { handleTransaction, pendingTransactions } = useAppContext();
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // We will now receive pending transactions from context directly to improve consistency
   const sortedPendingTransactions = useMemo(() => {
     if (!pendingTransactions) return [];
     return [...pendingTransactions].sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
@@ -37,7 +36,9 @@ export function RequestsTable() {
 
 
   const onHandleTransaction = async (id: string, status: 'approved' | 'rejected') => {
+    setProcessingId(id);
     await handleTransaction(id, status);
+    setProcessingId(null);
   }
 
   return (
@@ -72,7 +73,7 @@ export function RequestsTable() {
                 sortedPendingTransactions.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="text-xs text-muted-foreground">
-                        {t.timestamp ? format(toDate(t.timestamp), 'PP') : 'No date'}
+                        {t.timestamp ? format(toDate(t.timestamp), 'PP pp') : 'No date'}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono">
                         {t.userId}
@@ -87,14 +88,20 @@ export function RequestsTable() {
                         {t.type === 'deposit' ? `UTR: ${t.utr}` : `UPI: ${t.upi}`}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={() => onHandleTransaction(t.id, 'approved')}>
-                            <CheckCircle className="h-5 w-5" />
-                            <span className="sr-only">Approve</span>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => onHandleTransaction(t.id, 'rejected')}>
-                            <XCircle className="h-5 w-5" />
-                            <span className="sr-only">Reject</span>
-                        </Button>
+                      {processingId === t.id ? (
+                        <Loader2 className="h-5 w-5 animate-spin ml-auto" />
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={() => onHandleTransaction(t.id, 'approved')}>
+                              <CheckCircle className="h-5 w-5" />
+                              <span className="sr-only">Approve</span>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => onHandleTransaction(t.id, 'rejected')}>
+                              <XCircle className="h-5 w-5" />
+                              <span className="sr-only">Reject</span>
+                          </Button>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

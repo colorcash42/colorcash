@@ -80,12 +80,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentUser);
       setIsLoading(false);
       if (currentUser) {
-        router.push("/dashboard");
+        // Only redirect if they are on the login page
+        if (window.location.pathname === '/') {
+          router.push("/dashboard");
+        }
+      } else {
+        // If not logged in, redirect to login page
+        router.push("/");
       }
     });
     
     return () => unsubscribe();
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const setTheme = (theme: Theme) => {
     setThemeState(theme);
@@ -176,7 +183,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    router.push("/");
+    // onAuthStateChanged will handle the redirect
   };
 
   const placeBet = async (amount: number, betType: BetType, betValue: string | number) => {

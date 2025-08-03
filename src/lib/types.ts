@@ -19,4 +19,5 @@ export type Transaction = {
   upi?: string;
   userId: string;
   timestamp: string; // Changed from Date | FieldValue to string for serialization
+  userTransactionId?: string; // ID of the transaction doc in the user's subcollection
 };
