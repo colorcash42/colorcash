@@ -134,7 +134,7 @@ export async function requestDepositAction(userId: string, amount: number, utr: 
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
     const globalTransactionsCollectionRef = collection(db, "transactions");
 
-    const newTransaction: Omit<Transaction, "id" | "timestamp" | "processedTimestamp"> & { timestamp: any } = {
+    const newTransaction: Omit<Transaction, "id" | "timestamp"> & { timestamp: any } = {
         type: 'deposit',
         amount,
         status: 'pending',
@@ -167,7 +167,7 @@ export async function requestWithdrawalAction(userId: string, amount: number, up
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
     const globalTransactionsCollectionRef = collection(db, "transactions");
 
-    const newTransaction: Omit<Transaction, "id" | "timestamp" | "processedTimestamp"> & { timestamp: any } = {
+    const newTransaction: Omit<Transaction, "id" | "timestamp"> & { timestamp: any } = {
         type: 'withdrawal',
         amount,
         status: 'pending',
@@ -217,12 +217,12 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
             }
             
             // Update global transaction doc
-            transaction.update(globalTransactionRef, { status: newStatus, processedTimestamp: serverTimestamp() });
+            transaction.update(globalTransactionRef, { status: newStatus });
             
             // Update user-specific transaction doc if found
             if (!userTransactionSnapshot.empty) {
                  const userTransactionRef = userTransactionSnapshot.docs[0].ref;
-                 transaction.update(userTransactionRef, { status: newStatus, processedTimestamp: serverTimestamp() });
+                 transaction.update(userTransactionRef, { status: newStatus });
             }
 
             if (newStatus === 'approved') {

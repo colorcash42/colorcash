@@ -19,5 +19,4 @@ export type Transaction = {
   upi?: string;
   userId: string;
   timestamp: string; // Changed from Date | FieldValue to string for serialization
-  processedTimestamp?: string; // Changed from Date | FieldValue to string for serialization
 };
