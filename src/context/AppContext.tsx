@@ -21,34 +21,39 @@ import {
   getPendingTransactions,
 } from "@/app/actions";
 
-// Helper function to convert Firestore server timestamps to JS Dates
+// Helper function to recursively convert Firestore Timestamps to JS Dates
 const convertTimestamps = (data: any): any => {
-    if (data === null || typeof data !== 'object') {
-        return data;
-    }
+    if (!data) return data;
 
-    // Firestore Timestamp check
-    if (data.seconds !== undefined && data.nanoseconds !== undefined && typeof data.toDate === 'function') {
+    // Directly convert if it's a Firestore Timestamp
+    if (typeof data.toDate === 'function') {
         return data.toDate();
     }
-     if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
+    
+    // If it's a plain object that looks like a timestamp from serialization
+    if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
         return new Date(data.seconds * 1000 + data.nanoseconds / 1000000);
     }
 
-    // Handle arrays
+    // Recurse into arrays
     if (Array.isArray(data)) {
         return data.map(item => convertTimestamps(item));
     }
-    
-    // Handle objects
-    const newObj: { [key: string]: any } = {};
-    for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-            newObj[key] = convertTimestamps(data[key]);
+
+    // Recurse into objects
+    if (typeof data === 'object') {
+        const newObj: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                newObj[key] = convertTimestamps(data[key]);
+            }
         }
+        return newObj;
     }
-    return newObj;
-}
+
+    // Return primitive values as-is
+    return data;
+};
 
 
 type Theme = "light" | "dark" | "dark-pro";
