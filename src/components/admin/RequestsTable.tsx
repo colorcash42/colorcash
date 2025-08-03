@@ -14,31 +14,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
-import { getPendingTransactions } from "@/app/actions";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Transaction } from "@/lib/types";
 
 export function RequestsTable() {
-  const { handleTransaction } = useAppContext();
-  const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
+  const { handleTransaction, transactions } = useAppContext();
 
-  useEffect(() => {
-    // Fetch initial data, and re-fetch when context says so
-    const fetchPending = async () => {
-        const res = await getPendingTransactions();
-        setPendingTransactions(res.transactions);
-    };
-    fetchPending();
-
-    const interval = setInterval(fetchPending, 2000); // Poll every 2 seconds
-    return () => clearInterval(interval);
-  }, []);
+  const pendingTransactions = useMemo(() => {
+    return transactions.filter(t => t.status === 'pending');
+  }, [transactions]);
 
 
   const onHandleTransaction = async (id: string, status: 'approved' | 'rejected') => {
     await handleTransaction(id, status);
-    // Optimistically update UI
-    setPendingTransactions(prev => prev.filter(t => t.id !== id));
   }
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { createContext, useContext, useEffect, useState, useTransition } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Bet, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -26,6 +26,8 @@ interface AppContextType {
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
+  // This function will be exposed to allow components to trigger a manual refresh.
+  fetchData: () => Promise<void>; 
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -38,8 +40,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { toast } = useToast();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (isLoggedIn) {
+      // console.log("Fetching data...");
       const [balanceRes, betsRes, transactionsRes] = await Promise.all([
         getWalletBalance(),
         getBets(),
@@ -48,20 +51,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setWalletBalance(balanceRes.balance);
       setBets(betsRes.bets);
       setTransactions(transactionsRes.transactions);
+      // console.log("Data fetched: ", {balance: balanceRes.balance, bets: betsRes.bets.length, transactions: transactionsRes.transactions.length});
     }
-  };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const loggedInStatus = sessionStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedInStatus);
     setIsLoading(false);
   }, []);
-
+  
+  // Initial fetch and setup polling
   useEffect(() => {
     if(isLoggedIn){
       fetchData();
+      const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
+      return () => clearInterval(interval);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, fetchData]);
+
 
   const login = () => {
     setIsLoggedIn(true);
@@ -75,6 +83,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setIsLoggedIn(false);
     sessionStorage.removeItem("isLoggedIn");
+    setWalletBalance(0);
+    setBets([]);
+    setTransactions([]);
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
@@ -95,7 +106,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         description: result.message,
       });
     }
-    // No need to call fetchData(), revalidatePath in action handles it
+    await fetchData();
   };
   
   const requestDeposit = async (amount: number, utr: string) => {
@@ -112,6 +123,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
+    await fetchData();
   };
 
   const requestWithdrawal = async (amount: number, upi: string) => {
@@ -128,6 +140,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
+    await fetchData();
   };
 
   const handleTransaction = async (transactionId: string, newStatus: 'approved' | 'rejected') => {
@@ -144,6 +157,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
+    await fetchData();
   };
 
   const value = {
@@ -158,6 +172,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     requestDeposit,
     requestWithdrawal,
     handleTransaction,
+    fetchData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
