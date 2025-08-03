@@ -1,0 +1,64 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck } from "lucide-react";
+import { useAppContext } from "@/context/AppContext";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const navLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: Gem },
+    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/admin", label: "Admin", icon: ShieldCheck },
+]
+
+export function Header() {
+  const { walletBalance, logout } = useAppContext();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <Link href="/dashboard" className="flex items-center gap-2">
+            <CircleDollarSign className="h-8 w-8 text-primary" />
+            <span className="font-headline text-2xl font-bold tracking-tighter">
+            ColorCash
+            </span>
+        </Link>
+
+        <nav className="hidden items-center gap-2 md:flex">
+            {navLinks.map((link) => (
+                <Button key={link.href} variant="ghost" asChild className={cn(
+                    pathname === link.href && "bg-secondary"
+                )}>
+                    <Link href={link.href}>
+                        <link.icon className="mr-2 h-4 w-4" />
+                        {link.label}
+                    </Link>
+                </Button>
+            ))}
+        </nav>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2">
+            <Wallet className="h-5 w-5 text-primary" />
+            <span className="text-lg font-semibold tabular-nums">
+              ₹{walletBalance.toFixed(2)}
+            </span>
+          </div>
+          <Button variant="outline" size="icon" onClick={handleLogout}>
+            <LogOut className="h-4 w-4" />
+            <span className="sr-only">Logout</span>
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}
