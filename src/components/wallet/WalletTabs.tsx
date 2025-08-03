@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy } from 'lucide-react';
+import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '../ui/button';
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -56,7 +58,7 @@ function DepositForm() {
     };
 
     return (
-        <div className="grid md:grid-cols-2 gap-8 items-center">
+        <div className="grid md:grid-cols-2 gap-8 items-start">
             <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-secondary/50">
                  <h3 className="text-lg font-semibold mb-4">Scan to Pay</h3>
                  <div className="relative w-48 h-48 mb-4">
@@ -68,14 +70,20 @@ function DepositForm() {
                         className="object-contain"
                     />
                  </div>
-                 <div className="text-center">
-                    <p className="font-semibold text-sm">Or pay to UPI ID:</p>
-                    <div className="flex items-center gap-2 mt-1 bg-background p-2 rounded-md">
-                        <span className="font-mono text-sm">{upiId}</span>
-                        <Button variant="ghost" size="icon" onClick={handleCopy}>
-                            <Copy className="h-4 w-4"/>
-                        </Button>
+                 <div className="text-center space-y-3">
+                    <div>
+                        <p className="font-semibold text-sm">Or pay to UPI ID:</p>
+                        <div className="flex items-center gap-2 mt-1 bg-background p-2 rounded-md">
+                            <span className="font-mono text-sm">{upiId}</span>
+                            <Button variant="ghost" size="icon" onClick={handleCopy}>
+                                <Copy className="h-4 w-4"/>
+                            </Button>
+                        </div>
                     </div>
+                    <a href="/qrcode.jpg" download="qrcode.jpg" className={cn(buttonVariants({ variant: "outline" }))}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download QR
+                    </a>
                  </div>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
