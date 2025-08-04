@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Bet = {
   id: string;
@@ -27,19 +27,20 @@ export type Transaction = {
 export type LiveGameRound = {
   id: string; // e.g., "round-202407281200"
   status: 'betting' | 'spinning' | 'finished';
-  startTime: string;
-  spinTime: string; // When the betting phase ends and wheel starts spinning
-  endTime: string; // When the round is completely over and results are shown
+  startTime: string | Timestamp;
+  spinTime: string | Timestamp; // When the betting phase ends and wheel starts spinning
+  endTime: string | Timestamp; // When the round is completely over and results are shown
   winningMultiplier: number | null; // e.g., 2, 3, 5, or 0 for BUST
-  resultTimestamp: string | null;
+  resultTimestamp: string | Timestamp | null;
 }
 
 export type LiveBet = {
-  id: string;
+  id?: string; // Optional because we create it on the client first
   userId: string;
   roundId: string;
+  gameId: 'spin-and-win';
   amount: number;
   payout: number | null;
   status: 'pending' | 'won' | 'lost';
-  timestamp: string;
+  timestamp: string | FieldValue;
 }

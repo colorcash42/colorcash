@@ -1,10 +1,9 @@
-
 'use server';
 
 import type { Bet, Transaction, LiveGameRound, LiveBet } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit, collectionGroup } from "firebase/firestore";
 import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 
 // --- HELPER FUNCTIONS ---
@@ -12,6 +11,9 @@ import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 // Converts Firestore Timestamps to ISO strings for serialization
 const serializeObject = (obj: any) => {
     if (!obj) return obj;
+    if (Array.isArray(obj)) {
+        return obj.map(item => serializeObject(item));
+    }
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -400,51 +402,60 @@ export async function getGuruSuggestionAction(history: Bet[]): Promise<{ suggest
 // --- LIVE GAME ACTIONS ---
 
 export async function getLiveGameData(): Promise<{ currentRound: LiveGameRound | null }> {
-    const liveRoundsRef = collection(db, "liveGames");
-    const q = query(liveRoundsRef, orderBy("startTime", "desc"), limit(1));
-    const querySnapshot = await getDocs(q);
+    const liveStatusRef = doc(db, "liveGameStatus", "current");
+    const docSnap = await getDoc(liveStatusRef);
 
-    if (querySnapshot.empty) {
+    if (!docSnap.exists()) {
         return { currentRound: null };
     }
 
-    const currentRound = serializeObject(querySnapshot.docs[0].data()) as LiveGameRound;
+    const currentRound = serializeObject(docSnap.data()) as LiveGameRound;
     return { currentRound };
 }
+
 
 export async function placeLiveBetAction(userId: string, amount: number, roundId: string): Promise<{ success: boolean; message: string; }> {
     if (!userId) return { success: false, message: "User not authenticated." };
     if (!roundId) return { success: false, message: "No active game round." };
 
     const userDocRef = doc(db, "users", userId);
-    const roundDocRef = doc(db, "liveGames", roundId);
-    const betDocRef = doc(collection(db, `liveGames/${roundId}/bets`));
+    const roundStatusDocRef = doc(db, "liveGameStatus", "current");
+    
+    // Bets are now stored in a collection group for easier querying by the function
+    const betDocRef = doc(collection(db, `users/${userId}/bets`)); 
 
     try {
         await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
-            const roundDoc = await transaction.get(roundDocRef);
+            const roundDoc = await transaction.get(roundStatusDocRef);
 
             if (!userDoc.exists()) throw new Error("User not found.");
             if (!roundDoc.exists()) throw new Error("Game round not found.");
-            if (roundDoc.data().status !== 'betting') throw new Error("Betting for this round is closed.");
+            
+            const roundData = roundDoc.data();
+            if (roundData.status !== 'betting') throw new Error("Betting for this round is closed.");
+            if (roundData.id !== roundId) throw new Error("Betting for this round has already closed.");
+
 
             const currentBalance = userDoc.data().walletBalance;
             if (amount > currentBalance) throw new Error("Insufficient balance.");
 
             const newBalance = currentBalance - amount;
 
-            const newBet: Omit<LiveBet, 'id' | 'timestamp'> & { timestamp: any } = {
+            const newBet: Omit<LiveBet, 'id'> = {
                 userId,
                 roundId,
+                gameId: 'spin-and-win',
                 amount,
-                payout: null,
+                payout: null, // Payout is calculated by the cloud function
                 status: 'pending',
-                timestamp: serverTimestamp(),
+                timestamp: serverTimestamp() as any, // Let server set timestamp
             };
 
+            // Deduct amount immediately
             transaction.update(userDocRef, { walletBalance: newBalance });
-            transaction.set(betDocRef, newBet);
+            // Record the bet in a single, queryable collection
+            transaction.set(doc(collection(db, "bets"), betDocRef.id), newBet);
         });
         
         revalidatePath('/live'); // To update wallet balance display

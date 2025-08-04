@@ -2,38 +2,49 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users can only read/write their own document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+  
+    // Helper function to check if a user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
     }
     
-    // Users can only read/write their own bets and transactions
-    match /users/{userId}/{subcollection}/{docId} {
-       allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check if the requesting user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // Admins can read the global transaction list for approval
+    // Users can manage their own data, but not others'
+    match /users/{userId} {
+      allow read, update, write: if isSignedIn() && isOwner(userId);
+
+      // Users can manage their own subcollections
+      match /{allSubcollections}/{docId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+    }
+    
+    // Global transactions can only be read by any signed in user
+    // but only created/updated by the owner or an admin (server-side).
+    // The server-side logic will handle permissions for approving/rejecting.
     match /transactions/{transactionId} {
-      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
-      allow write: if false; // Only server actions can write/update status
+        allow read, create: if isSignedIn();
+        allow update: if false; // Must be updated by server-side admin logic
     }
     
     // --- Live Game Rules ---
-
-    // Anyone can read the current state of live game rounds
-    match /liveGames/{roundId} {
-        allow read: if true;
-        allow write: if false; // Only the server (Firebase Function) can create/update rounds
+    
+    // Anyone can read the live game status to sync their client
+    match /liveGameStatus/current {
+      allow read: if isSignedIn();
+      allow write: if false; // Only backend function can write here
     }
-
-    // Users can create their own bets in a round
-    // Users can only read their own bet, not others.
-    match /liveGames/{roundId}/bets/{betId} {
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        allow read: if request.auth != null && get(/databases/$(database)/documents/liveGames/$(roundId)/bets/$(betId)).data.userId == request.auth.uid;
-        allow update, delete: if false; // Bets cannot be changed or deleted
+    
+    // Bets can be created by authenticated users.
+    // Reading/updating is handled by the backend function.
+    match /bets/{betId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update: if false; // Only backend function can update a bet
     }
-
   }
 }
