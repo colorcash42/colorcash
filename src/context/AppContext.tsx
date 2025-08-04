@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { Bet, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +53,7 @@ interface AppContextType {
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
   getGuruSuggestion: () => Promise<string | undefined>;
   changePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string; }>;
+  sendPasswordReset: (email: string) => Promise<boolean>;
   fetchData: () => Promise<void>; 
 }
 
@@ -337,7 +338,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       toast({ variant: 'destructive', title: 'Password Change Failed', description: result.message });
       return result;
     }
-  }
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `A reset link has been sent to ${email}.`,
+      });
+      return true;
+    } catch (error: any) {
+      let errorMessage = "An unknown error occurred. Please try again.";
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email address.';
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Reset Failed',
+        description: errorMessage,
+      });
+      return false;
+    }
+  };
 
 
   const value = {
@@ -358,6 +381,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     handleTransaction,
     getGuruSuggestion,
     changePassword,
+    sendPasswordReset,
     fetchData,
     theme,
     setTheme,
