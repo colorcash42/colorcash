@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, LayoutGrid, Gamepad2 } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, LayoutGrid, Gamepad2, LifeBuoy } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
+import { HelpDialog } from "./HelpDialog";
 
 const navLinks = [
     { href: "/dashboard", label: "Games", lobbyLabel: "Lobby", icon: Gem },
@@ -31,6 +32,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -135,6 +137,11 @@ export function Header() {
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsHelpOpen(true)}>
+                  <LifeBuoy className="mr-2 h-4 w-4" />
+                  <span>Help & Support</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={handleLogout}>
                    <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
@@ -145,6 +152,7 @@ export function Header() {
         </div>
       </header>
        <SettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+       <HelpDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
     </>
   );
 }
