@@ -22,7 +22,8 @@ import {
   getPendingTransactions,
   getGuruSuggestionAction,
   changePasswordAction,
-  ensureUserDocument
+  ensureUserDocument,
+  placeLiveBetAction
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
@@ -50,6 +51,7 @@ interface AppContextType {
   logout: () => void;
   placeBet: (amount: number, betType: ColorCashBetType, betValue: string | number) => Promise<any>;
   placeOddEvenBet: (amount: number, betValue: OddEvenBetType) => Promise<any>;
+  placeLiveBet: (amount: number, roundId: string) => Promise<any>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
@@ -252,6 +254,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return result;
   };
   
+    const placeLiveBet = async (amount: number, roundId: string) => {
+    if (!user) {
+      const failResult = { success: false, message: "User not logged in" };
+      toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
+      return failResult;
+    };
+    const result = await placeLiveBetAction(user.uid, amount, roundId);
+    
+    if (!result.success) {
+      toast({
+        variant: "destructive",
+        title: "Bet Failed",
+        description: result.message,
+      });
+    }
+
+    await fetchData();
+    return result;
+  };
+
   const requestDeposit = async (amount: number, utr: string) => {
     if (!user) return;
     const result = await requestDepositAction(user.uid, amount, utr);
@@ -395,6 +417,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     logout,
     placeBet,
     placeOddEvenBet,
+    placeLiveBet,
     requestDeposit,
     requestWithdrawal,
     handleTransaction,

@@ -5,7 +5,7 @@ import { Header } from "@/components/common/Header";
 import { BetHistoryTable } from "@/components/dashboard/BetHistoryTable";
 import { useAppContext } from "@/context/AppContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent } from "@/components/ui/card";
-import { Dices, Palette, ArrowRight } from "lucide-react";
+import { Dices, Palette, ArrowRight, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ export default function DashboardPage() {
               <OffersSection />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
               <GameCard 
                 icon={<Palette className="h-8 w-8 text-primary" />}
                 title="ColorCash"
@@ -67,6 +67,13 @@ export default function DashboardPage() {
                 title="Odd or Even"
                 description="Guess if the die roll is odd or even."
                 href="/games/odd-even"
+              />
+               <GameCard 
+                icon={<Gamepad2 className="h-8 w-8 text-primary" />}
+                title="Spin & Win"
+                description="A live game with timed rounds."
+                href="/live"
+                className="md:col-span-2 lg:col-span-1"
               />
             </div>
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, LayoutGrid } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, LayoutGrid, Gamepad2 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import { SettingsDialog } from "./SettingsDialog";
 
 const navLinks = [
     { href: "/dashboard", label: "Games", lobbyLabel: "Lobby", icon: Gem },
+    { href: "/live", label: "Live", icon: Gamepad2 },
     { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
@@ -59,7 +60,7 @@ export function Header() {
                   const onGamePage = pathname.startsWith('/games/');
                   const isCurrentLink = onGamePage ? link.href === '/dashboard' : pathname === link.href;
                   const label = onGamePage && link.href === '/dashboard' ? link.lobbyLabel : link.label;
-                  const icon = onGamePage && link.href === '/dashboard' ? <LayoutGrid className="mr-2 h-4 w-4" /> : <link.icon className="mr-2 h-4 w-4" />;
+                  const icon = (onGamePage && link.href === '/dashboard') ? <LayoutGrid className="mr-2 h-4 w-4" /> : <link.icon className="mr-2 h-4 w-4" />;
                   
                   return (
                     <Button key={link.href} variant="ghost" asChild className={cn(
