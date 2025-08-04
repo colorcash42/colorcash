@@ -3,7 +3,7 @@
 import type { Bet, Transaction, LiveGameRound, LiveBet, UserData } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit, collectionGroup, increment } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit, collectionGroup, increment, setDoc } from "firebase/firestore";
 import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 import { getAuth } from "firebase-admin/auth";
 import { app } from "@/lib/firebase-admin"; // Import admin app
@@ -660,3 +660,5 @@ export async function changePasswordAction(uid: string, newPassword: string): Pr
         return { success: false, message: e.message || "An error occurred while changing the password." };
     }
 }
+
+    
