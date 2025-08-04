@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -93,6 +94,14 @@ export default {
         'marquee2': {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0%)' },
+        },
+        'neon-glow': {
+          '0%, 100%': {
+            'text-shadow': '0 0 2px hsl(var(--primary-foreground)), 0 0 5px hsl(var(--primary-foreground)), 0 0 10px hsl(var(--primary))'
+          },
+          '50%': {
+            'text-shadow': '0 0 5px hsl(var(--primary-foreground)), 0 0 10px hsl(var(--primary-foreground)), 0 0 20px hsl(var(--primary))'
+          }
         }
       },
       animation: {
@@ -102,8 +111,10 @@ export default {
         'pop-in': 'pop-in 0.3s ease-out forwards',
         'marquee': 'marquee 60s linear infinite',
         'marquee2': 'marquee2 60s linear infinite',
+        'neon-glow': 'neon-glow 2.5s linear infinite',
       },
     },
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+

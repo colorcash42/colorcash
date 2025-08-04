@@ -1,3 +1,4 @@
+
 "use client";
 
 import { PageClientAuth } from "@/components/common/PageClientAuth";
@@ -57,9 +58,9 @@ export default function DashboardPage() {
                 <Marquee />
             </div>
 
-            <Alert className="mb-8 bg-primary/5 border-primary/20">
+            <Alert className="mb-8 bg-primary/10 border-primary/20 text-primary-foreground/90">
               <Clock className="h-4 w-4" />
-              <AlertTitle>लाइव गेम का समय</AlertTitle>
+              <AlertTitle className="font-bold text-primary-foreground animate-neon-glow">लाइव गेम का समय</AlertTitle>
               <AlertDescription>
                 कृपया ध्यान दें: लाइव गेम राउंड केवल रात 8:00 बजे से 11:00 बजे तक ही उपलब्ध रहेगा।
               </AlertDescription>
@@ -97,3 +98,4 @@ export default function DashboardPage() {
     </PageClientAuth>
   );
 }
+
