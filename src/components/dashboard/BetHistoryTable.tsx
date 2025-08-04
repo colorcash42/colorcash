@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import {
   Table,
@@ -9,12 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Dices, Gamepad2, Palette } from "lucide-react";
+import { Dices, Gamepad2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../ui/button";
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -85,10 +87,26 @@ const getBetDisplayValue = (bet: Bet) => {
 
 export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
   const { bets } = useAppContext();
+  const [currentPage, setCurrentPage] = useState(1);
+  const BETS_PER_PAGE = 5;
 
   // Use the bets from context if available, otherwise use initialBets from server.
   // This ensures the table updates after a new bet is placed.
   const displayBets = bets.length > 0 ? bets : initialBets;
+
+  const totalPages = Math.ceil(displayBets.length / BETS_PER_PAGE);
+  const paginatedBets = displayBets.slice(
+    (currentPage - 1) * BETS_PER_PAGE,
+    currentPage * BETS_PER_PAGE
+  );
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   return (
     <Card className="shadow-lg">
@@ -110,14 +128,14 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {displayBets.length === 0 ? (
+                {paginatedBets.length === 0 ? (
                     <TableRow>
                         <TableCell colSpan={7} className="text-center h-24">
                             You haven't placed any bets yet.
                         </TableCell>
                     </TableRow>
                 ) : (
-                    displayBets.map((bet) => (
+                    paginatedBets.map((bet) => (
                         <TableRow key={bet.id}>
                         <TableCell>
                              <div className="flex items-center gap-2 text-muted-foreground font-medium">
@@ -150,6 +168,23 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
             </Table>
         </div>
       </CardContent>
+      {totalPages > 1 && (
+         <CardFooter className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                </Button>
+                 <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }
