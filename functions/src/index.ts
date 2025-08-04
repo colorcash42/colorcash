@@ -1,4 +1,3 @@
-
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
@@ -14,7 +13,7 @@ const MULTIPLIERS = [0, 2, 3, 5, 2, 0, 3, 2, 5, 2, 0]; // 0 is BUST
  * Manages game rounds for "Spin & Win".
  * This function runs every 2 minutes.
  * In each run, it will:
- * 1. Process results for the *previous* round (if it was in 'betting' state).
+ * 1. Process results for the *previous* round (if it was in 'betting' or 'spinning' state).
  * 2. Start a *new* round for players to bet on.
  */
 export const manageSpinAndWin = functions
@@ -29,14 +28,14 @@ export const manageSpinAndWin = functions
     functions.logger.info(`Function executed at: ${context.timestamp}`);
 
     try {
-        // --- 1. Process Previous Round (if it exists and was betting) ---
+        // --- 1. Process Previous Round (if it exists) ---
         const previousRoundDoc = await liveStatusRef.get();
         if (previousRoundDoc.exists) {
             const previousRound = previousRoundDoc.data();
-            const roundEndTime = (previousRound?.endTime as admin.firestore.Timestamp)?.toMillis();
-
-            // Only process if the round was in 'betting' state and has expired.
-            if (previousRound && previousRound.status === "betting" && roundEndTime < now.toMillis()) {
+            
+            // Only process if the round was in 'betting' or 'spinning' state.
+            // A 'finished' round means it's already processed.
+            if (previousRound && (previousRound.status === "betting" || previousRound.status === "spinning")) {
                 const roundId = previousRound.id;
                 functions.logger.info(`Processing results for round ${roundId}...`);
 
@@ -104,7 +103,7 @@ export const manageSpinAndWin = functions
             resultTimestamp: null,
         };
 
-        // Set the new round data in the 'current' document
+        // Always set/overwrite the 'current' document with the new round data
         batch.set(liveStatusRef, newRound);
         
         await batch.commit();
@@ -113,6 +112,23 @@ export const manageSpinAndWin = functions
 
     } catch (error) {
         functions.logger.error("Error in manageSpinAndWin function: ", error);
+        // If there's an error, try to at least start a fresh round to prevent getting stuck.
+         const fallbackBatch = db.batch();
+         const newRoundId = `round-fallback-${now.toMillis()}`;
+         const spinTime = admin.firestore.Timestamp.fromMillis(now.toMillis() + BETTING_DURATION_SECONDS * 1000);
+         const endTime = admin.firestore.Timestamp.fromMillis(now.toMillis() + ROUND_INTERVAL_MINUTES * 60 * 1000);
+         const newRound = {
+            id: newRoundId,
+            status: "betting",
+            startTime: now,
+            spinTime: spinTime,
+            endTime: endTime,
+            winningMultiplier: null,
+            resultTimestamp: null,
+        };
+        fallbackBatch.set(liveStatusRef, newRound);
+        await fallbackBatch.commit();
+        functions.logger.info(`Fallback round ${newRoundId} started.`);
     }
     
     return null;

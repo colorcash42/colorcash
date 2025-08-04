@@ -1,26 +1,25 @@
-
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
-import { Gem, Loader2, Circle, Clock, CheckCircle } from 'lucide-react';
+import { Gem, Loader2, Clock, CheckCircle } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
 import { Progress } from '../ui/progress';
-import { getLiveGameData, placeLiveBetAction } from '@/app/actions';
-import { LiveGameRound } from '@/lib/types';
+import { getLiveGameData } from '@/app/actions';
+import type { LiveGameRound } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { useSound } from '@/hooks/use-sound';
 
 // Helper to get remaining time in seconds
-const getRemainingSeconds = (endTime: string | Date | Timestamp): number => {
+const getRemainingSeconds = (endTime: string | Date | Timestamp | null): number => {
     if (!endTime) return 0;
     const end = (endTime as Timestamp).toMillis ? (endTime as Timestamp).toMillis() : new Date(endTime as string).getTime();
     const now = Date.now();
@@ -142,7 +141,7 @@ function SpinningWheel({ winningMultiplier }: { winningMultiplier: number | null
 
 
 export function SpinAndWinGame() {
-  const { walletBalance, fetchData } = useAppContext();
+  const { walletBalance, placeLiveBet, fetchData } = useAppContext();
   const [currentRound, setCurrentRound] = useState<LiveGameRound | null>(null);
   const [amount, setAmount] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
@@ -180,7 +179,7 @@ export function SpinAndWinGame() {
     
     setIsLoading(true);
     playBetSound();
-    const response = await placeLiveBetAction(amount, currentRound.id);
+    const response = await placeLiveBet(betAmount, currentRound.id);
     
     if (response.success) {
         toast({ title: "Bet Placed!", description: "Your bet has been accepted. Good luck!" });
@@ -230,7 +229,7 @@ export function SpinAndWinGame() {
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle className="font-headline">Previous Round Result</AlertTitle>
                     <AlertDescription>
-                        The winning multiplier was <span className="font-bold">{currentRound.winningMultiplier > 0 ? `x${currentRound.winningMultiplier}` : 'BUST'}</span>.
+                        The winning multiplier was <span className="font-bold">{currentRound.winningMultiplier > 0 ? `x${currentRound.winningMultiplier}` : 'BUST'}</span>. A new round will start shortly.
                     </AlertDescription>
                 </Alert>
             )}
@@ -281,4 +280,3 @@ export function SpinAndWinGame() {
     </>
   );
 }
-

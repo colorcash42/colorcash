@@ -126,7 +126,7 @@ export async function getBets(userId:string): Promise<{ bets: Bet[] }> {
   const betsCollectionRef = collection(db, `users/${userId}/bets`);
   const qInstant = query(betsCollectionRef, orderBy("timestamp", "desc"));
   
-  const liveBetsRef = collection(db, "bets");
+  const liveBetsRef = collectionGroup(db, "bets"); // Use collectionGroup to get all bets
   const qLive = query(liveBetsRef, where("userId", "==", userId), orderBy("timestamp", "desc"));
 
   const [instantSnapshot, liveSnapshot] = await Promise.all([
