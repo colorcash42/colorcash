@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { Bet, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +20,8 @@ import {
   requestWithdrawalAction,
   handleTransactionAction,
   getPendingTransactions,
-  getGuruSuggestionAction
+  getGuruSuggestionAction,
+  changePasswordAction
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
@@ -51,6 +52,7 @@ interface AppContextType {
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
   getGuruSuggestion: () => Promise<string | undefined>;
+  changePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string; }>;
   fetchData: () => Promise<void>; 
 }
 
@@ -302,6 +304,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return undefined;
     }
   }
+  
+  const changePassword = async (currentPass: string, newPass: string) => {
+    if (!user || !user.email) {
+      const result = { success: false, message: "No user is logged in." };
+       toast({ variant: 'destructive', title: 'Error', description: result.message });
+      return result;
+    }
+
+    try {
+      // Re-authenticate user with their current password. This is a security measure.
+      const credential = EmailAuthProvider.credential(user.email, currentPass);
+      await reauthenticateWithCredential(user, credential);
+      
+      // If re-authentication is successful, update the password.
+      await updatePassword(user, newPass);
+      
+      const result = { success: true, message: "Password updated successfully!" };
+      toast({ title: 'Success', description: result.message });
+      return result;
+
+    } catch (error: any) {
+      let errorMessage = "An unknown error occurred.";
+      // Provide more specific error messages
+      if (error.code === 'auth/wrong-password') {
+        errorMessage = 'The current password you entered is incorrect.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'The new password is too weak.';
+      }
+      
+      const result = { success: false, message: errorMessage };
+      toast({ variant: 'destructive', title: 'Password Change Failed', description: result.message });
+      return result;
+    }
+  }
 
 
   const value = {
@@ -321,6 +357,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     requestWithdrawal,
     handleTransaction,
     getGuruSuggestion,
+    changePassword,
     fetchData,
     theme,
     setTheme,
