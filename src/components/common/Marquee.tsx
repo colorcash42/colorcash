@@ -1,4 +1,6 @@
 
+"use client";
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -12,17 +14,17 @@ const marqueeMessages = [
 
 export function Marquee() {
   return (
-    <div className="relative flex w-full overflow-hidden bg-secondary text-secondary-foreground py-2 rounded-lg border">
-      <div className="animate-marquee whitespace-nowrap">
+    <div className="relative flex w-full overflow-x-hidden bg-secondary text-secondary-foreground py-2 rounded-lg border">
+      <div className="py-2 animate-marquee whitespace-nowrap">
         {marqueeMessages.map((msg, i) => (
-          <span key={i} className="mx-8 text-sm font-medium">
+          <span key={`p1-${i}`} className="mx-8 text-sm font-medium">
             {msg}
           </span>
         ))}
       </div>
-      <div className="absolute top-0 animate-marquee2 whitespace-nowrap">
-         {marqueeMessages.map((msg, i) => (
-          <span key={i} className="mx-8 text-sm font-medium">
+       <div className="absolute top-0 py-2 animate-marquee2 whitespace-nowrap">
+        {marqueeMessages.map((msg, i) => (
+          <span key={`p2-${i}`} className="mx-8 text-sm font-medium">
             {msg}
           </span>
         ))}
