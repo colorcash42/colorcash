@@ -11,23 +11,22 @@ import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 // Converts Firestore Timestamps to ISO strings for serialization
 const serializeObject = (obj: any) => {
     if (!obj) return obj;
+    if (obj instanceof Timestamp) {
+        return obj.toDate().toISOString();
+    }
     if (Array.isArray(obj)) {
         return obj.map(item => serializeObject(item));
     }
-    const newObj: { [key: string]: any } = {};
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            const value = obj[key];
-            if (value instanceof Timestamp) {
-                newObj[key] = value.toDate().toISOString();
-            } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-                newObj[key] = serializeObject(value);
-            } else {
-                newObj[key] = value;
+    if (typeof obj === 'object') {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                newObj[key] = serializeObject(obj[key]);
             }
         }
+        return newObj;
     }
-    return newObj;
+    return obj;
 };
 
 
@@ -54,14 +53,32 @@ export async function getWalletBalance(userId: string) {
   return { balance };
 }
 
-export async function getBets(userId: string) {
+export async function getBets(userId:string) {
+  // Query both instant and live bets
   const betsCollectionRef = collection(db, `users/${userId}/bets`);
-  const q = query(betsCollectionRef, orderBy("timestamp", "desc"));
-  const querySnapshot = await getDocs(q);
-  // Serialize each document before returning
-  const bets = querySnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Bet);
-  return { bets };
+  const qInstant = query(betsCollectionRef, orderBy("timestamp", "desc"));
+  
+  const liveBetsRef = collection(db, "bets");
+  const qLive = query(liveBetsRef, where("userId", "==", userId), orderBy("timestamp", "desc"));
+
+  const [instantSnapshot, liveSnapshot] = await Promise.all([
+    getDocs(qInstant),
+    getDocs(qLive),
+  ]);
+
+  const instantBets = instantSnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Bet);
+  const liveBets = liveSnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Bet);
+
+  // Merge and sort
+  const allBets = [...instantBets, ...liveBets].sort((a, b) => {
+    const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return dateB - dateA;
+  });
+
+  return { bets: allBets };
 }
+
 
 export async function getTransactions(userId: string) {
   const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
@@ -421,8 +438,8 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
     const userDocRef = doc(db, "users", userId);
     const roundStatusDocRef = doc(db, "liveGameStatus", "current");
     
-    // Bets are now stored in a collection group for easier querying by the function
-    const betDocRef = doc(collection(db, `users/${userId}/bets`)); 
+    // Bets are stored in a root 'bets' collection for easy querying by the function
+    const betDocRef = doc(collection(db, "bets")); 
 
     try {
         await runTransaction(db, async (transaction) => {
@@ -455,7 +472,7 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
             // Deduct amount immediately
             transaction.update(userDocRef, { walletBalance: newBalance });
             // Record the bet in a single, queryable collection
-            transaction.set(doc(collection(db, "bets"), betDocRef.id), newBet);
+            transaction.set(betDocRef, newBet);
         });
         
         revalidatePath('/live'); // To update wallet balance display

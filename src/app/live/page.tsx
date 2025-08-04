@@ -15,7 +15,7 @@ import { db } from "@/lib/firebase";
 import { placeLiveBetAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 
-const multipliers = [0, 2, 3, 5, 2, 0, 3, 2];
+const BETTING_DURATION_SECONDS = 105;
 
 function CountdownCircle({ duration, targetTime }) {
     const [progress, setProgress] = useState(100);
@@ -65,7 +65,7 @@ function CountdownCircle({ duration, targetTime }) {
 }
 
 export default function LiveGamePage() {
-    const { user, walletBalance } = useAppContext();
+    const { user, walletBalance, fetchData } = useAppContext();
     const { toast } = useToast();
     const [currentRound, setCurrentRound] = useState<LiveGameRound | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +79,17 @@ export default function LiveGamePage() {
 
         const unsubscribe = onSnapshot(liveStatusDocRef, (doc) => {
             if (doc.exists()) {
-                const round = doc.data() as LiveGameRound;
+                const roundData = doc.data();
+                // Firestore Timestamps need to be converted to JS Dates for serialization
+                const round: LiveGameRound = {
+                    id: roundData.id,
+                    status: roundData.status,
+                    startTime: roundData.startTime.toDate().toISOString(),
+                    spinTime: roundData.spinTime.toDate().toISOString(),
+                    endTime: roundData.endTime.toDate().toISOString(),
+                    winningMultiplier: roundData.winningMultiplier,
+                    resultTimestamp: roundData.resultTimestamp ? roundData.resultTimestamp.toDate().toISOString() : null,
+                };
                 setCurrentRound(round);
                 setIsLoading(false);
             } else {
@@ -107,6 +117,13 @@ export default function LiveGamePage() {
 
         return () => clearInterval(interval);
     }, [currentRound]);
+
+    useEffect(() => {
+        // Refetch user data when round is finished to update balance
+        if (currentRound?.status === 'finished') {
+            fetchData();
+        }
+    }, [currentRound?.status, fetchData]);
 
 
     const handlePlaceBet = async () => {
@@ -140,7 +157,7 @@ export default function LiveGamePage() {
             case 'spinning':
                 return 'Spinning... Good luck!';
             case 'finished':
-                return `Last Round Result: ${currentRound.winningMultiplier === 0 ? 'BUST' : `${currentRound.winningMultiplier}x`}`;
+                return `Round Finished! Multiplier: ${currentRound.winningMultiplier === 0 ? 'BUST' : `${currentRound.winningMultiplier}x`}`;
             default:
                 return "Waiting for next round...";
         }
@@ -179,13 +196,14 @@ export default function LiveGamePage() {
                         {currentRound?.status === 'betting' && "Place your bet before the time runs out!"}
                         {currentRound?.status === 'spinning' && "The wheel is in motion. No more bets!"}
                         {currentRound?.status === 'finished' && "Waiting for the next round to begin..."}
+                         {!currentRound && "Connecting..."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="w-full">
                     <div className="flex justify-center items-center my-6">
                        {currentRound && currentRound.status === 'betting' ? (
                           <div className="relative flex items-center justify-center">
-                            <CountdownCircle duration={105} targetTime={currentRound.spinTime} />
+                            <CountdownCircle duration={BETTING_DURATION_SECONDS} targetTime={currentRound.spinTime} />
                             <span className="absolute text-5xl font-bold font-headline">{timeLeft}</span>
                           </div>
                        ) : (
@@ -214,7 +232,7 @@ export default function LiveGamePage() {
                              </Button>
                         </div>
                     ) : (
-                        <div className="w-full max-w-sm mx-auto text-center">
+                         <div className="w-full max-w-sm mx-auto text-center">
                             <p className="font-semibold text-lg">Next round is starting soon...</p>
                             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mt-4"/>
                         </div>
@@ -228,4 +246,3 @@ export default function LiveGamePage() {
     </PageClientAuth>
   );
 }
-

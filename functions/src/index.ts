@@ -16,7 +16,7 @@ const MULTIPLIERS = [0, 2, 3, 5, 2, 0, 3, 2]; // 0 is BUST
  * This function runs on a schedule (every 2 minutes).
  */
 export const manageSpinAndWin = functions
-  .runWith({ memory: "512MB", timeoutSeconds: 110 })
+  .runWith({ memory: "512MB", timeoutSeconds: 120 }) // Increased timeout
   .pubsub.schedule(`every ${ROUND_INTERVAL_MINUTES} minutes from 00:00 to 23:59`)
   .timeZone("UTC")
   .onRun(async (context) => {
@@ -46,7 +46,6 @@ export const manageSpinAndWin = functions
     console.log(`Round ${roundId} started. Betting is open.`);
 
     // --- Wait for the betting period to end ---
-    // We create a promise that resolves when the betting time is over.
     await new Promise((resolve) =>
       setTimeout(
         resolve,
@@ -66,8 +65,9 @@ export const manageSpinAndWin = functions
     ];
     console.log(`Winning multiplier for round ${roundId} is: ${winningMultiplier}`);
 
+    // Query the root 'bets' collection for this round
     const betsSnapshot = await db
-      .collectionGroup("bets")
+      .collection("bets")
       .where("roundId", "==", roundId)
       .get();
 
@@ -90,10 +90,10 @@ export const manageSpinAndWin = functions
                     walletBalance: admin.firestore.FieldValue.increment(payout),
                 });
                 // Update the bet status to 'won'
-                batch.update(doc.ref, { status: "won", payout: payout });
+                batch.update(doc.ref, { status: "won", payout: payout, outcome: "win" });
             } else {
                 // It's a BUST, bet is lost
-                batch.update(doc.ref, { status: "lost", payout: 0 });
+                batch.update(doc.ref, { status: "lost", payout: 0, outcome: "loss" });
             }
         });
 
