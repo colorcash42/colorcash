@@ -464,9 +464,10 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
             if (!roundDoc.exists()) throw new Error("Game round not found.");
             
             const roundData = roundDoc.data();
-            if (roundData.status !== 'betting') throw new Error("Betting for this round is closed.");
-            if (roundData.id !== roundId) throw new Error("Betting for this round has already closed.");
-
+            // Critical check: Make sure the round ID matches and betting is open
+            if (roundData.id !== roundId || roundData.status !== 'betting') {
+                throw new Error("Betting for this round is closed.");
+            }
 
             const currentBalance = userDoc.data().walletBalance;
             if (amount > currentBalance) throw new Error("Insufficient balance.");
@@ -498,3 +499,5 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
         return { success: false, message: e.message || "An unknown error occurred." };
     }
 }
+
+    
