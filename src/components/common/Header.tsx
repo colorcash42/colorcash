@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, LayoutGrid } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
 
 const navLinks = [
-    { href: "/dashboard", label: "Games", icon: Gem },
+    { href: "/dashboard", label: "Games", lobbyLabel: "Lobby", icon: Gem },
     { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
@@ -55,16 +55,23 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-2 md:flex">
-              {navLinks.map((link) => (
-                  <Button key={link.href} variant="ghost" asChild className={cn(
-                      (pathname === link.href || (link.href === '/dashboard' && pathname.startsWith('/games'))) && "bg-secondary"
-                  )}>
-                      <Link href={link.href}>
-                          <link.icon className="mr-2 h-4 w-4" />
-                          {link.label}
-                      </Link>
-                  </Button>
-              ))}
+              {navLinks.map((link) => {
+                  const onGamePage = pathname.startsWith('/games/');
+                  const isCurrentLink = onGamePage ? link.href === '/dashboard' : pathname === link.href;
+                  const label = onGamePage && link.href === '/dashboard' ? link.lobbyLabel : link.label;
+                  const icon = onGamePage && link.href === '/dashboard' ? <LayoutGrid className="mr-2 h-4 w-4" /> : <link.icon className="mr-2 h-4 w-4" />;
+                  
+                  return (
+                    <Button key={link.href} variant="ghost" asChild className={cn(
+                        isCurrentLink && "bg-secondary"
+                    )}>
+                        <Link href={link.href}>
+                            {icon}
+                            {label}
+                        </Link>
+                    </Button>
+                  );
+              })}
               {showAdminLink && (
                  <Button variant="ghost" asChild className={cn(
                       pathname === adminLink.href && "bg-secondary"
@@ -98,14 +105,20 @@ export function Header() {
                 
                 {/* Mobile Navigation Links */}
                 <div className="md:hidden">
-                  {navLinks.map((link) => (
-                     <DropdownMenuItem key={link.href} asChild>
-                        <Link href={link.href}>
-                           <link.icon className="mr-2 h-4 w-4" />
-                           <span>{link.label}</span>
-                        </Link>
-                     </DropdownMenuItem>
-                  ))}
+                  {navLinks.map((link) => {
+                      const onGamePage = pathname.startsWith('/games/');
+                      const label = onGamePage && link.href === '/dashboard' ? link.lobbyLabel : link.label;
+                      const icon = onGamePage && link.href === '/dashboard' ? <LayoutGrid className="mr-2 h-4 w-4" /> : <link.icon className="mr-2 h-4 w-4" />;
+                      
+                      return (
+                         <DropdownMenuItem key={link.href} asChild>
+                            <Link href={link.href}>
+                               {icon}
+                               <span>{label}</span>
+                            </Link>
+                         </DropdownMenuItem>
+                      );
+                  })}
                   {showAdminLink && (
                       <DropdownMenuItem asChild>
                         <Link href={adminLink.href}>
