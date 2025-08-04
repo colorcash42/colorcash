@@ -86,12 +86,12 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2">
+            <Link href="/wallet" className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 transition-colors hover:bg-accent hover:text-accent-foreground">
               <Wallet className="h-5 w-5 text-primary" />
               <span className="text-lg font-semibold tabular-nums">
                 ₹{walletBalance.toFixed(2)}
               </span>
-            </div>
+            </Link>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
