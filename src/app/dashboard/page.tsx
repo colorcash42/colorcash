@@ -75,8 +75,8 @@ export default function DashboardPage() {
               />
                <GameCard 
                 icon={<Gamepad2 className="h-8 w-8 text-primary" />}
-                title="Spin & Win"
-                description="A live game with timed rounds."
+                title="Live 4-Color Game"
+                description="Join the live game with timed rounds!"
                 href="/live"
                 className="md:col-span-2 lg:col-span-1"
               />
