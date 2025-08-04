@@ -229,6 +229,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Data fetching is handled by onAuthStateChanged
       router.push("/dashboard");
       toast({
+        variant: "success",
         title: "Login Successful",
         description: "Welcome back!",
       });
@@ -256,6 +257,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       router.push("/dashboard");
        toast({
+        variant: "success",
         title: "Account Created!",
         description: docResult.message,
       });
@@ -391,6 +393,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const result = await handleTransactionAction(transactionId, newStatus);
     if (result.success) {
        toast({
+            variant: "success",
             title: `Transaction ${newStatus}`,
             description: result.message
         });
@@ -433,7 +436,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await updatePassword(user, newPass);
       
       const result = { success: true, message: "Password updated successfully!" };
-      toast({ title: 'Success', description: result.message });
+      toast({ variant: "success", title: 'Success', description: result.message });
       return result;
 
     } catch (error: any) {
@@ -477,7 +480,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (!isUserAdmin) return;
       const result = await startFourColorRoundAction();
       if (result.success) {
-          toast({ title: "Success", description: result.message });
+          toast({ variant: "success", title: "Success", description: result.message });
       } else {
           toast({ variant: "destructive", title: "Error", description: result.message });
       }
@@ -487,7 +490,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (!isUserAdmin) return;
       const result = await endFourColorRoundAction(winningColor);
       if (result.success) {
-          toast({ title: "Round Ended", description: result.message });
+          toast({ variant: "success", title: "Round Ended", description: result.message });
       } else {
           toast({ variant: "destructive", title: "Error", description: result.message });
       }
