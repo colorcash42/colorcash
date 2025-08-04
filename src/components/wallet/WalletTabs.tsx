@@ -213,15 +213,26 @@ function ReferAndEarn() {
         toast({ title: "Referral code copied!" });
     };
 
-    const handleShare = () => {
+    const handleShare = async () => {
         const shareText = `Join me on ColorCash and get a ₹75 bonus! Use my referral code: ${userData.referralCode}`;
+        const shareData = {
+            title: 'Join ColorCash',
+            text: shareText,
+            url: window.location.origin,
+        };
+
         if (navigator.share) {
-            navigator.share({
-                title: 'Join ColorCash',
-                text: shareText,
-                url: window.location.origin,
-            }).catch(console.error);
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                // If sharing fails (e.g., user cancels or permission is denied),
+                // fall back to copying to clipboard.
+                console.error("Share failed:", err);
+                navigator.clipboard.writeText(shareText);
+                toast({ title: "Copied to clipboard!", description: "Sharing was canceled, so we copied the text for you." });
+            }
         } else {
+            // Fallback for browsers that don't support the Share API
             navigator.clipboard.writeText(shareText);
             toast({ title: "Copied to clipboard!", description: "Share text copied. You can now paste it." });
         }
