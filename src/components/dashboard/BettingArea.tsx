@@ -158,111 +158,109 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
 
   return (
     <>
-    <Card className="shadow-lg animate-fade-in">
-        <CardContent className="pt-6">
-            <div className="space-y-6">
-                {/* Bet Type Selection */}
-                <div>
-                    <Label className="mb-2 block font-semibold">1. Choose what to bet on:</Label>
-                    <ToggleGroup type="single" value={betType} onValueChange={(val: BetType) => {
-                        if (val) {
-                            setBetType(val);
-                            // Reset bet value when type changes
-                            if (val === 'color') setBetValue('Green');
-                            if (val === 'number') setBetValue('trio1'); // Default to first trio
-                            if (val === 'size') setBetValue('Small');
-                        }
-                    }} className="w-full">
-                        <ToggleGroupItem value="color" className="w-1/3">Color</ToggleGroupItem>
-                        <ToggleGroupItem value="number" className="w-1/3">Number</ToggleGroupItem>
-                        <ToggleGroupItem value="size" className="w-1/3">Size</ToggleGroupItem>
-                    </ToggleGroup>
-                </div>
-
-                {/* Bet Value Selection */}
-                <div>
-                     <Label className="mb-2 block font-semibold">2. Select your choice:</Label>
-                    {betType === 'color' && (
-                         <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-3 gap-2">
-                             <ToggleGroupItem value="Green" className={cn("bg-green-500/20 hover:bg-green-500/40 data-[state=on]:bg-green-500 data-[state=on]:text-white", buttonAnimation)}>Green</ToggleGroupItem>
-                             <ToggleGroupItem value="Violet" className={cn("bg-violet-500/20 hover:bg-violet-500/40 data-[state=on]:bg-violet-500 data-[state=on]:text-white", buttonAnimation)}>Violet</ToggleGroupItem>
-                             <ToggleGroupItem value="Red" className={cn("bg-red-500/20 hover:bg-red-500/40 data-[state=on]:bg-red-500 data-[state=on]:text-white", buttonAnimation)}>Red</ToggleGroupItem>
-                         </ToggleGroup>
-                    )}
-                     {betType === 'number' && (
-                         <ToggleGroup type="single" value={betValue.toString()} onValueChange={(val) => {
-                            if (val) {
-                                // check if the value is numeric (for the '0' button)
-                                const numericVal = Number(val);
-                                setBetType(isNaN(numericVal) ? 'trio' : 'number');
-                                setBetValue(isNaN(numericVal) ? val : numericVal);
-                            }
-                         }} className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <ToggleGroupItem value="trio1" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 1-4-7</ToggleGroupItem>
-                            <ToggleGroupItem value="trio2" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 2-5-8</ToggleGroupItem>
-                            <ToggleGroupItem value="trio3" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 3-6-9</ToggleGroupItem>
-                            <ToggleGroupItem value="0" className={cn("bg-yellow-500/20 hover:bg-yellow-500/40 data-[state=on]:bg-yellow-500 data-[state=on]:text-white", buttonAnimation)}>0 (Jackpot)</ToggleGroupItem>
-                         </ToggleGroup>
-                    )}
-                     {betType === 'size' && (
-                         <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-2 gap-2">
-                           <ToggleGroupItem value="Small" className={cn("bg-indigo-500/20 hover:bg-indigo-500/40 data-[state=on]:bg-indigo-500 data-[state=on]:text-white", buttonAnimation)}>Small</ToggleGroupItem>
-                           <ToggleGroupItem value="Big" className={cn("bg-orange-500/20 hover:bg-orange-500/40 data-[state=on]:bg-orange-500 data-[state=on]:text-white", buttonAnimation)}>Big</ToggleGroupItem>
-                         </ToggleGroup>
-                    )}
-                </div>
-                
-                 {/* Amount Input */}
-                <div>
-                    <Label htmlFor="bet-amount" className="mb-2 block font-semibold">3. Enter your bet amount:</Label>
-                    <div className="flex gap-2">
-                        <Input 
-                            id="bet-amount" 
-                            type="number" 
-                            placeholder="Bet Amount"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            min="1"
-                            step="any"
-                            required
-                            disabled={isLoading}
-                            className="text-lg h-12"
-                        />
-                         <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(10)}>+10</Button>
-                         <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(50)}>+50</Button>
-                         <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(100)}>+100</Button>
-                    </div>
-                </div>
-
-                {/* Guru Suggestion */}
-                <div className="space-y-2">
-                     <Button onClick={handleGetSuggestion} variant="outline" className="w-full" disabled={isGuruLoading || isLoading}>
-                        {isGuruLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
-                        {isGuruLoading ? 'Consulting the Guru...' : 'Get Guru Suggestion'}
-                    </Button>
-                    {guruSuggestion && (
-                        <Alert className="bg-accent/50 border-primary/50 animate-fade-in">
-                            <Wand2 className="h-4 w-4" />
-                            <AlertTitle className="font-headline">The Guru Says:</AlertTitle>
-                            <AlertDescription>
-                                {guruSuggestion}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </div>
-
-
-                {/* Submit Button */}
-                <Button onClick={handleBet} className="w-full text-lg py-6" disabled={isLoading}>
-                    {isLoading ? 
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
-                    <Gem className="mr-2 h-5 w-5" />
+    <CardContent className="pt-0 flex-1 flex flex-col">
+        <div className="space-y-6 flex-1 flex flex-col justify-end">
+            {/* Bet Type Selection */}
+            <div>
+                <Label className="mb-2 block font-semibold">1. Choose what to bet on:</Label>
+                <ToggleGroup type="single" value={betType} onValueChange={(val: BetType) => {
+                    if (val) {
+                        setBetType(val);
+                        // Reset bet value when type changes
+                        if (val === 'color') setBetValue('Green');
+                        if (val === 'number') setBetValue('trio1'); // Default to first trio
+                        if (val === 'size') setBetValue('Small');
                     }
-                    {isLoading ? 'Placing Bet...' : `Bet (₹${amount || 0})`}
-                </Button>
+                }} className="w-full">
+                    <ToggleGroupItem value="color" className="w-1/3">Color</ToggleGroupItem>
+                    <ToggleGroupItem value="number" className="w-1/3">Number</ToggleGroupItem>
+                    <ToggleGroupItem value="size" className="w-1/3">Size</ToggleGroupItem>
+                </ToggleGroup>
             </div>
-        </CardContent>
-    </Card>
+
+            {/* Bet Value Selection */}
+            <div>
+                 <Label className="mb-2 block font-semibold">2. Select your choice:</Label>
+                {betType === 'color' && (
+                     <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-3 gap-2">
+                         <ToggleGroupItem value="Green" className={cn("bg-green-500/20 hover:bg-green-500/40 data-[state=on]:bg-green-500 data-[state=on]:text-white", buttonAnimation)}>Green</ToggleGroupItem>
+                         <ToggleGroupItem value="Violet" className={cn("bg-violet-500/20 hover:bg-violet-500/40 data-[state=on]:bg-violet-500 data-[state=on]:text-white", buttonAnimation)}>Violet</ToggleGroupItem>
+                         <ToggleGroupItem value="Red" className={cn("bg-red-500/20 hover:bg-red-500/40 data-[state=on]:bg-red-500 data-[state=on]:text-white", buttonAnimation)}>Red</ToggleGroupItem>
+                     </ToggleGroup>
+                )}
+                 {betType === 'number' && (
+                     <ToggleGroup type="single" value={betValue.toString()} onValueChange={(val) => {
+                        if (val) {
+                            // check if the value is numeric (for the '0' button)
+                            const numericVal = Number(val);
+                            setBetType(isNaN(numericVal) ? 'trio' : 'number');
+                            setBetValue(isNaN(numericVal) ? val : numericVal);
+                        }
+                     }} className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <ToggleGroupItem value="trio1" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 1-4-7</ToggleGroupItem>
+                        <ToggleGroupItem value="trio2" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 2-5-8</ToggleGroupItem>
+                        <ToggleGroupItem value="trio3" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 3-6-9</ToggleGroupItem>
+                        <ToggleGroupItem value="0" className={cn("bg-yellow-500/20 hover:bg-yellow-500/40 data-[state=on]:bg-yellow-500 data-[state=on]:text-white", buttonAnimation)}>0 (Jackpot)</ToggleGroupItem>
+                     </ToggleGroup>
+                )}
+                 {betType === 'size' && (
+                     <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-2 gap-2">
+                       <ToggleGroupItem value="Small" className={cn("bg-indigo-500/20 hover:bg-indigo-500/40 data-[state=on]:bg-indigo-500 data-[state=on]:text-white", buttonAnimation)}>Small</ToggleGroupItem>
+                       <ToggleGroupItem value="Big" className={cn("bg-orange-500/20 hover:bg-orange-500/40 data-[state=on]:bg-orange-500 data-[state=on]:text-white", buttonAnimation)}>Big</ToggleGroupItem>
+                     </ToggleGroup>
+                )}
+            </div>
+            
+             {/* Amount Input */}
+            <div>
+                <Label htmlFor="bet-amount" className="mb-2 block font-semibold">3. Enter your bet amount:</Label>
+                <div className="flex gap-2">
+                    <Input 
+                        id="bet-amount" 
+                        type="number" 
+                        placeholder="Bet Amount"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        min="1"
+                        step="any"
+                        required
+                        disabled={isLoading}
+                        className="text-lg h-12"
+                    />
+                     <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(10)}>+10</Button>
+                     <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(50)}>+50</Button>
+                     <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(100)}>+100</Button>
+                </div>
+            </div>
+
+            {/* Guru Suggestion */}
+            <div className="space-y-2">
+                 <Button onClick={handleGetSuggestion} variant="outline" className="w-full" disabled={isGuruLoading || isLoading}>
+                    {isGuruLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
+                    {isGuruLoading ? 'Consulting the Guru...' : 'Get Guru Suggestion'}
+                </Button>
+                {guruSuggestion && (
+                    <Alert className="bg-accent/50 border-primary/50 animate-fade-in">
+                        <Wand2 className="h-4 w-4" />
+                        <AlertTitle className="font-headline">The Guru Says:</AlertTitle>
+                        <AlertDescription>
+                            {guruSuggestion}
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </div>
+
+
+            {/* Submit Button */}
+            <Button onClick={handleBet} className="w-full text-lg py-6" disabled={isLoading}>
+                {isLoading ? 
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
+                <Gem className="mr-2 h-5 w-5" />
+                }
+                {isLoading ? 'Placing Bet...' : `Bet (₹${amount || 0})`}
+            </Button>
+        </div>
+    </CardContent>
 
     <ResultDialog 
         isOpen={isResultOpen}

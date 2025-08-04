@@ -120,52 +120,53 @@ export function OddEvenGame({ walletBalance }: { walletBalance: number }) {
   
   return (
     <>
-    <Card className="shadow-lg animate-fade-in">
-        <CardContent className="pt-6">
-            <div className="space-y-6">
-                
-                {/* Bet Value Selection */}
-                <div>
-                     <Label className="mb-2 block font-semibold">1. Select your choice:</Label>
-                     <ToggleGroup type="single" value={betValue} onValueChange={(val: 'Odd' | 'Even') => val && setBetValue(val)} className="grid grid-cols-2 gap-2">
-                        <ToggleGroupItem value="Odd" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Odd</ToggleGroupItem>
-                        <ToggleGroupItem value="Even" className={cn("bg-purple-500/20 hover:bg-purple-500/40 data-[state=on]:bg-purple-500 data-[state=on]:text-white", buttonAnimation)}>Even</ToggleGroupItem>
-                     </ToggleGroup>
-                </div>
-                
-                 {/* Amount Input */}
-                <div>
-                    <Label htmlFor="bet-amount" className="mb-2 block font-semibold">2. Enter your bet amount:</Label>
-                    <div className="flex gap-2">
-                        <Input 
-                            id="bet-amount" 
-                            type="number" 
-                            placeholder="Bet Amount"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            min="1"
-                            step="any"
-                            required
-                            disabled={isLoading}
-                            className="text-lg h-12"
-                        />
-                         <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(10)}>+10</Button>
-                         <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(50)}>+50</Button>
-                         <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(100)}>+100</Button>
-                    </div>
-                </div>
-
-                {/* Submit Button */}
-                <Button onClick={handleBet} className="w-full text-lg py-6" disabled={isLoading}>
-                    {isLoading ? 
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
-                    <Dices className="mr-2 h-5 w-5" />
-                    }
-                    {isLoading ? 'Placing Bet...' : `Bet (₹${amount || 0})`}
-                </Button>
+    <CardContent className="pt-0 flex-1 flex flex-col">
+        <div className="space-y-6 flex-1 flex flex-col justify-end">
+            
+            {/* Bet Value Selection */}
+            <div>
+                 <Label className="mb-2 block font-semibold">1. Select your choice:</Label>
+                 <ToggleGroup type="single" value={betValue} onValueChange={(val: 'Odd' | 'Even') => val && setBetValue(val)} className="grid grid-cols-2 gap-2">
+                    <ToggleGroupItem value="Odd" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Odd</ToggleGroupItem>
+                    <ToggleGroupItem value="Even" className={cn("bg-purple-500/20 hover:bg-purple-500/40 data-[state=on]:bg-purple-500 data-[state=on]:text-white", buttonAnimation)}>Even</ToggleGroupItem>
+                 </ToggleGroup>
             </div>
-        </CardContent>
-    </Card>
+            
+             {/* Amount Input */}
+            <div>
+                <Label htmlFor="bet-amount-oddeven" className="mb-2 block font-semibold">2. Enter your bet amount:</Label>
+                <div className="flex gap-2">
+                    <Input 
+                        id="bet-amount-oddeven" 
+                        type="number" 
+                        placeholder="Bet Amount"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        min="1"
+                        step="any"
+                        required
+                        disabled={isLoading}
+                        className="text-lg h-12"
+                    />
+                     <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(10)}>+10</Button>
+                     <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(50)}>+50</Button>
+                     <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(100)}>+100</Button>
+                </div>
+            </div>
+
+            {/* Spacer to push button to the bottom */}
+            <div className="flex-grow"></div>
+
+            {/* Submit Button */}
+            <Button onClick={handleBet} className="w-full text-lg py-6" disabled={isLoading}>
+                {isLoading ? 
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
+                <Dices className="mr-2 h-5 w-5" />
+                }
+                {isLoading ? 'Placing Bet...' : `Bet (₹${amount || 0})`}
+            </Button>
+        </div>
+    </CardContent>
 
     <ResultDialog 
         isOpen={isResultOpen}

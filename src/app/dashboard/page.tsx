@@ -5,8 +5,9 @@ import { Header } from "@/components/common/Header";
 import { BettingArea } from "@/components/dashboard/BettingArea";
 import { BetHistoryTable } from "@/components/dashboard/BetHistoryTable";
 import { useAppContext } from "@/context/AppContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OddEvenGame } from "@/components/dashboard/OddEvenGame";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dices, Palette } from "lucide-react";
 
 export default function DashboardPage() {
   const { bets, walletBalance } = useAppContext();
@@ -22,18 +23,31 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground">Choose a game and an amount to play.</p>
             </div>
             
-            <Tabs defaultValue="colorcash" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="colorcash">ColorCash</TabsTrigger>
-                <TabsTrigger value="oddeven">Odd or Even</TabsTrigger>
-              </TabsList>
-              <TabsContent value="colorcash">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* ColorCash Game */}
+              <Card className="flex flex-col">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Palette />
+                        ColorCash
+                    </CardTitle>
+                    <CardDescription>Bet on colors, numbers, or sizes.</CardDescription>
+                </CardHeader>
                 <BettingArea walletBalance={walletBalance} />
-              </TabsContent>
-              <TabsContent value="oddeven">
+              </Card>
+
+              {/* Odd or Even Game */}
+              <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Dices />
+                        Odd or Even
+                    </Title>
+                    <CardDescription>Guess if the die roll is odd or even.</CardDescription>
+                </CardHeader>
                 <OddEvenGame walletBalance={walletBalance} />
-              </TabsContent>
-            </Tabs>
+              </Card>
+            </div>
 
             <div className="mt-12">
                 <h2 className="font-headline text-2xl md:text-3xl font-bold mb-4">Your Bet History</h2>
