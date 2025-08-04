@@ -9,7 +9,6 @@ import { Dices, Palette, ArrowRight, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { OffersSection } from "@/components/dashboard/OffersSection";
 import { Marquee } from "@/components/common/Marquee";
 
 const GameCard = ({ icon, title, description, href, className }) => (
@@ -52,10 +51,6 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground">Select a game from the options below to start playing.</p>
             </div>
             
-             <div className="mb-8">
-              <OffersSection />
-            </div>
-
             <div className="mb-8">
                 <Marquee />
             </div>
