@@ -26,89 +26,95 @@ export const manageSpinAndWin = functions
     const liveStatusRef = db.collection("liveGameStatus").doc("current");
     const batch = db.batch();
     
-    console.log(`Function executed at: ${context.timestamp}`);
+    functions.logger.info(`Function executed at: ${context.timestamp}`);
 
-    // --- 1. Process Previous Round (if it exists and was betting) ---
-    const previousRoundDoc = await liveStatusRef.get();
-    if (previousRoundDoc.exists) {
-      const previousRound = previousRoundDoc.data();
-      const roundEndTime = (previousRound?.endTime as admin.firestore.Timestamp)?.toMillis();
+    try {
+        // --- 1. Process Previous Round (if it exists and was betting) ---
+        const previousRoundDoc = await liveStatusRef.get();
+        if (previousRoundDoc.exists) {
+            const previousRound = previousRoundDoc.data();
+            const roundEndTime = (previousRound?.endTime as admin.firestore.Timestamp)?.toMillis();
 
-      // Only process if the round was in 'betting' state and has expired.
-      if (previousRound && previousRound.status === "betting" && roundEndTime < now.toMillis()) {
-        const roundId = previousRound.id;
-        console.log(`Processing results for round ${roundId}...`);
+            // Only process if the round was in 'betting' state and has expired.
+            if (previousRound && previousRound.status === "betting" && roundEndTime < now.toMillis()) {
+                const roundId = previousRound.id;
+                functions.logger.info(`Processing results for round ${roundId}...`);
 
-        const winningMultiplier = MULTIPLIERS[Math.floor(Math.random() * MULTIPLIERS.length)];
-        console.log(`Winning multiplier for round ${roundId} is: ${winningMultiplier}`);
-        
-        batch.update(liveStatusRef, {
-          status: "finished",
-          winningMultiplier: winningMultiplier,
-          resultTimestamp: now,
-        });
+                const winningMultiplier = MULTIPLIERS[Math.floor(Math.random() * MULTIPLIERS.length)];
+                functions.logger.info(`Winning multiplier for round ${roundId} is: ${winningMultiplier}`);
+                
+                batch.update(liveStatusRef, {
+                    status: "finished",
+                    winningMultiplier: winningMultiplier,
+                    resultTimestamp: now,
+                });
 
-        // Use a collection group query to get all bets for the round
-        const betsSnapshot = await db
-          .collectionGroup("bets")
-          .where("roundId", "==", roundId)
-          .get();
+                // Use a collection group query to get all bets for the round
+                const betsSnapshot = await db
+                    .collectionGroup("bets")
+                    .where("roundId", "==", roundId)
+                    .get();
 
-        if (betsSnapshot.empty) {
-          console.log(`No bets were placed in round ${roundId}.`);
-        } else {
-          console.log(`Processing ${betsSnapshot.size} bets for round ${roundId}...`);
-          const userPayouts = new Map<string, number>();
+                if (betsSnapshot.empty) {
+                    functions.logger.info(`No bets were placed in round ${roundId}.`);
+                } else {
+                    functions.logger.info(`Processing ${betsSnapshot.size} bets for round ${roundId}...`);
+                    const userPayouts = new Map<string, number>();
 
-          betsSnapshot.docs.forEach((doc) => {
-            const bet = doc.data();
-            const userId = bet.userId;
-            const amount = bet.amount;
+                    betsSnapshot.docs.forEach((doc) => {
+                        const bet = doc.data();
+                        const userId = bet.userId;
+                        const amount = bet.amount;
 
-            if (winningMultiplier > 0) {
-              const payout = amount * winningMultiplier;
-              userPayouts.set(userId, (userPayouts.get(userId) || 0) + payout);
-              batch.update(doc.ref, { status: "won", payout: payout, outcome: "win" });
-            } else {
-              batch.update(doc.ref, { status: "lost", payout: 0, outcome: "loss" });
+                        if (winningMultiplier > 0) {
+                            const payout = amount * winningMultiplier;
+                            userPayouts.set(userId, (userPayouts.get(userId) || 0) + payout);
+                            batch.update(doc.ref, { status: "won", payout: payout, outcome: "win" });
+                        } else {
+                            batch.update(doc.ref, { status: "lost", payout: 0, outcome: "loss" });
+                        }
+                    });
+
+                    // Update user wallet balances in a separate loop
+                    for (const [userId, totalPayout] of userPayouts.entries()) {
+                        const userRef = db.collection("users").doc(userId);
+                        batch.update(userRef, {
+                            walletBalance: admin.firestore.FieldValue.increment(totalPayout),
+                        });
+                        functions.logger.info(`Awarded ${totalPayout} to user ${userId}`);
+                    }
+                }
             }
-          });
-
-          // Update user wallet balances in a separate loop
-          for (const [userId, totalPayout] of userPayouts.entries()) {
-             const userRef = db.collection("users").doc(userId);
-             batch.update(userRef, {
-                walletBalance: admin.firestore.FieldValue.increment(totalPayout),
-             });
-             console.log(`Awarded ${totalPayout} to user ${userId}`);
-          }
         }
-      }
+
+        // --- 2. Start a New Round ---
+        const newRoundId = `round-${now.toMillis()}`;
+        functions.logger.info(`Starting new Spin & Win round: ${newRoundId}`);
+        
+        const spinTime = admin.firestore.Timestamp.fromMillis(now.toMillis() + BETTING_DURATION_SECONDS * 1000);
+        const endTime = admin.firestore.Timestamp.fromMillis(now.toMillis() + ROUND_INTERVAL_MINUTES * 60 * 1000);
+
+        const newRound = {
+            id: newRoundId,
+            status: "betting",
+            startTime: now,
+            spinTime: spinTime,
+            endTime: endTime,
+            winningMultiplier: null,
+            resultTimestamp: null,
+        };
+
+        // Set the new round data in the 'current' document
+        batch.set(liveStatusRef, newRound);
+        
+        await batch.commit();
+
+        functions.logger.info(`Round ${newRoundId} started. Betting is open until ${spinTime.toDate()}.`);
+
+    } catch (error) {
+        functions.logger.error("Error in manageSpinAndWin function: ", error);
     }
-
-    // --- 2. Start a New Round ---
-    const newRoundId = `round-${now.toMillis()}`;
-    console.log(`Starting new Spin & Win round: ${newRoundId}`);
     
-    const spinTime = admin.firestore.Timestamp.fromMillis(now.toMillis() + BETTING_DURATION_SECONDS * 1000);
-    const endTime = admin.firestore.Timestamp.fromMillis(now.toMillis() + ROUND_INTERVAL_MINUTES * 60 * 1000);
-
-    const newRound = {
-      id: newRoundId,
-      status: "betting",
-      startTime: now,
-      spinTime: spinTime,
-      endTime: endTime,
-      winningMultiplier: null,
-      resultTimestamp: null,
-    };
-
-    // Set the new round data in the 'current' document
-    batch.set(liveStatusRef, newRound);
-    
-    await batch.commit();
-
-    console.log(`Round ${newRoundId} started. Betting is open until ${spinTime.toDate()}.`);
     return null;
   });
 
@@ -117,7 +123,5 @@ export const manageSpinAndWin = functions
  */
 export const helloWorld = functions.https.onRequest((request, response) => {
   functions.logger.info("Hello logs!", { structuredData: true });
-  response.send("Hello from Firebase!");
+  response.send("Hello from Firebase! The function deployment is working.");
 });
-
-    
