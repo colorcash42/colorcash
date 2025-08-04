@@ -42,7 +42,7 @@ export default function DashboardPage() {
                     <CardTitle className="flex items-center gap-2">
                         <Dices />
                         Odd or Even
-                    </Title>
+                    </CardTitle>
                     <CardDescription>Guess if the die roll is odd or even.</CardDescription>
                 </CardHeader>
                 <OddEvenGame walletBalance={walletBalance} />
