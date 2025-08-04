@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, Gamepad2 } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,6 @@ import { SettingsDialog } from "./SettingsDialog";
 
 const navLinks = [
     { href: "/dashboard", label: "Games", icon: Gem },
-    { href: "/live", label: "Live Game", icon: Gamepad2 },
     { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
@@ -58,7 +57,7 @@ export function Header() {
           <nav className="hidden items-center gap-2 md:flex">
               {navLinks.map((link) => (
                   <Button key={link.href} variant="ghost" asChild className={cn(
-                      pathname === link.href && "bg-secondary"
+                      (pathname === link.href || (link.href === '/dashboard' && pathname.startsWith('/games'))) && "bg-secondary"
                   )}>
                       <Link href={link.href}>
                           <link.icon className="mr-2 h-4 w-4" />
