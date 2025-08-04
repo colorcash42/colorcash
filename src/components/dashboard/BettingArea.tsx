@@ -52,7 +52,7 @@ function ResultDialog({ isOpen, onOpenChange, result, betAmount }) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex items-center justify-center space-x-4 my-6">
-                    <div className={cn("p-4 rounded-lg text-4xl font-bold", getWinningColorClasses(winningColor))}>
+                    <div className={cn("p-4 rounded-lg text-4xl font-bold animate-pop-in", getWinningColorClasses(winningColor))}>
                         {winningNumber}
                     </div>
                     <div className="text-left">
@@ -153,10 +153,12 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
     }
     setIsGuruLoading(false);
   }
+  
+  const buttonAnimation = "transition-transform duration-200 hover:scale-105";
 
   return (
     <>
-    <Card className="shadow-lg">
+    <Card className="shadow-lg animate-fade-in">
         <CardContent className="pt-6">
             <div className="space-y-6">
                 {/* Bet Type Selection */}
@@ -182,9 +184,9 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                      <Label className="mb-2 block font-semibold">2. Select your choice:</Label>
                     {betType === 'color' && (
                          <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-3 gap-2">
-                             <ToggleGroupItem value="Green" className="bg-green-500/20 hover:bg-green-500/40 data-[state=on]:bg-green-500 data-[state=on]:text-white">Green</ToggleGroupItem>
-                             <ToggleGroupItem value="Violet" className="bg-violet-500/20 hover:bg-violet-500/40 data-[state=on]:bg-violet-500 data-[state=on]:text-white">Violet</ToggleGroupItem>
-                             <ToggleGroupItem value="Red" className="bg-red-500/20 hover:bg-red-500/40 data-[state=on]:bg-red-500 data-[state=on]:text-white">Red</ToggleGroupItem>
+                             <ToggleGroupItem value="Green" className={cn("bg-green-500/20 hover:bg-green-500/40 data-[state=on]:bg-green-500 data-[state=on]:text-white", buttonAnimation)}>Green</ToggleGroupItem>
+                             <ToggleGroupItem value="Violet" className={cn("bg-violet-500/20 hover:bg-violet-500/40 data-[state=on]:bg-violet-500 data-[state=on]:text-white", buttonAnimation)}>Violet</ToggleGroupItem>
+                             <ToggleGroupItem value="Red" className={cn("bg-red-500/20 hover:bg-red-500/40 data-[state=on]:bg-red-500 data-[state=on]:text-white", buttonAnimation)}>Red</ToggleGroupItem>
                          </ToggleGroup>
                     )}
                      {betType === 'number' && (
@@ -196,16 +198,16 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                                 setBetValue(isNaN(numericVal) ? val : numericVal);
                             }
                          }} className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <ToggleGroupItem value="trio1" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Trio 1-4-7</ToggleGroupItem>
-                            <ToggleGroupItem value="trio2" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Trio 2-5-8</ToggleGroupItem>
-                            <ToggleGroupItem value="trio3" className="bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Trio 3-6-9</ToggleGroupItem>
-                            <ToggleGroupItem value="0" className="bg-yellow-500/20 hover:bg-yellow-500/40 data-[state=on]:bg-yellow-500 data-[state=on]:text-white">0 (Jackpot)</ToggleGroupItem>
+                            <ToggleGroupItem value="trio1" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 1-4-7</ToggleGroupItem>
+                            <ToggleGroupItem value="trio2" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 2-5-8</ToggleGroupItem>
+                            <ToggleGroupItem value="trio3" className={cn("bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white", buttonAnimation)}>Trio 3-6-9</ToggleGroupItem>
+                            <ToggleGroupItem value="0" className={cn("bg-yellow-500/20 hover:bg-yellow-500/40 data-[state=on]:bg-yellow-500 data-[state=on]:text-white", buttonAnimation)}>0 (Jackpot)</ToggleGroupItem>
                          </ToggleGroup>
                     )}
                      {betType === 'size' && (
                          <ToggleGroup type="single" value={betValue as string} onValueChange={(val) => val && setBetValue(val)} className="grid grid-cols-2 gap-2">
-                           <ToggleGroupItem value="Small" className="bg-indigo-500/20 hover:bg-indigo-500/40 data-[state=on]:bg-indigo-500 data-[state=on]:text-white">Small</ToggleGroupItem>
-                           <ToggleGroupItem value="Big" className="bg-orange-500/20 hover:bg-orange-500/40 data-[state=on]:bg-orange-500 data-[state=on]:text-white">Big</ToggleGroupItem>
+                           <ToggleGroupItem value="Small" className={cn("bg-indigo-500/20 hover:bg-indigo-500/40 data-[state=on]:bg-indigo-500 data-[state=on]:text-white", buttonAnimation)}>Small</ToggleGroupItem>
+                           <ToggleGroupItem value="Big" className={cn("bg-orange-500/20 hover:bg-orange-500/40 data-[state=on]:bg-orange-500 data-[state=on]:text-white", buttonAnimation)}>Big</ToggleGroupItem>
                          </ToggleGroup>
                     )}
                 </div>
@@ -239,7 +241,7 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
                         {isGuruLoading ? 'Consulting the Guru...' : 'Get Guru Suggestion'}
                     </Button>
                     {guruSuggestion && (
-                        <Alert className="bg-accent/50 border-primary/50">
+                        <Alert className="bg-accent/50 border-primary/50 animate-fade-in">
                             <Wand2 className="h-4 w-4" />
                             <AlertTitle className="font-headline">The Guru Says:</AlertTitle>
                             <AlertDescription>
