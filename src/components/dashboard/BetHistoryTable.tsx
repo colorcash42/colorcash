@@ -43,12 +43,12 @@ const getBetDisplayValue = (bet: Bet) => {
     if (bet.gameId === 'live-four-color') {
         const color = bet.betValue.toString().replace('Bet on ', '');
         let colorClass = '';
-        if (color === 'Red') colorClass = 'bg-red-500';
-        if (color === 'Yellow') colorClass = 'bg-yellow-400';
-        if (color === 'Black') colorClass = 'bg-black';
-        if (color === 'Blue') colorClass = 'bg-blue-500';
-         return <div className="flex items-center gap-2 font-medium">
-            <div className={cn("h-4 w-4 rounded-full", colorClass)} />
+        if (color === 'Red') colorClass = 'bg-red-500 text-white';
+        if (color === 'Yellow') colorClass = 'bg-yellow-400 text-black';
+        if (color === 'Black') colorClass = 'bg-black text-white';
+        if (color === 'Blue') colorClass = 'bg-blue-500 text-white';
+         return <div className="inline-flex items-center gap-2 font-medium px-2 py-1 rounded-md" style={{ backgroundColor: colorClass.split(' ')[0] }}>
+            <div className={cn("h-3 w-3 rounded-full border border-white/50", colorClass)} />
             {color}
         </div>
     }
@@ -56,29 +56,34 @@ const getBetDisplayValue = (bet: Bet) => {
     switch (bet.betType) {
         case 'color':
             let colorClass = '';
-            if (bet.betValue === 'Red') colorClass = 'bg-red-500';
-            if (bet.betValue === 'Green') colorClass = 'bg-green-500';
-            if (bet.betValue === 'Violet') colorClass = 'bg-violet-500';
-            return <div className="flex items-center gap-2 font-medium">
-                <div className={cn("h-4 w-4 rounded-full", colorClass)} />
+            if (bet.betValue === 'Red') colorClass = 'bg-red-500 text-white';
+            if (bet.betValue === 'Green') colorClass = 'bg-green-500 text-white';
+            if (bet.betValue === 'Violet') colorClass = 'bg-violet-500 text-white';
+            return <div className={cn("inline-flex items-center gap-2 font-medium px-2 py-1 rounded-md text-white", colorClass)}>
                 {bet.betValue}
             </div>
         case 'number':
              if (bet.betValue === 0) {
-                return <span className="font-mono font-medium bg-yellow-500/20 px-2 py-1 rounded">0 (Jackpot)</span>
+                return <span className="font-mono font-medium bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">0 (Jackpot)</span>
              }
-             return <span className="font-mono font-medium">{bet.betValue}</span>
+             return <span className="font-mono font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded">{bet.betValue}</span>
         case 'trio':
             const trioMap: { [key: string]: string } = {
                 'trio1': 'Trio 1-4-7',
                 'trio2': 'Trio 2-5-8',
                 'trio3': 'Trio 3-6-9',
             };
-            return <span className="font-medium">{trioMap[bet.betValue as string] || bet.betValue}</span>
+            return <span className="font-medium bg-blue-500/20 text-blue-700 dark:text-blue-400 px-2 py-1 rounded">{trioMap[bet.betValue as string] || bet.betValue}</span>
         case 'size':
-            return <span className="font-medium">{bet.betValue}</span>
+             const sizeClass = bet.betValue === 'Small' 
+                ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-400' 
+                : 'bg-orange-500/20 text-orange-700 dark:text-orange-400';
+            return <span className={cn("font-medium px-2 py-1 rounded", sizeClass)}>{bet.betValue}</span>
         case 'oddOrEven':
-            return <span className="font-medium">{bet.betValue}</span>
+            const oddEvenClass = bet.betValue === 'Odd'
+                ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-400'
+                : 'bg-purple-500/20 text-purple-700 dark:text-purple-400';
+            return <span className={cn("font-medium px-2 py-1 rounded", oddEvenClass)}>{bet.betValue}</span>
         default:
             return <span className="font-medium">{bet.betValue}</span>
     }
