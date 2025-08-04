@@ -58,10 +58,10 @@ export default function DashboardPage() {
                 <Marquee />
             </div>
 
-            <Alert className="mb-8 bg-primary/10 border-primary/20 text-primary-foreground/90">
-              <Clock className="h-4 w-4" />
-              <AlertTitle className="font-bold text-primary-foreground animate-neon-glow">लाइव गेम का समय</AlertTitle>
-              <AlertDescription>
+            <Alert className="mb-8 bg-primary/10 border-primary/20">
+              <Clock className="h-4 w-4 text-primary" />
+              <AlertTitle className="font-bold text-primary animate-neon-glow">लाइव गेम का समय</AlertTitle>
+              <AlertDescription className="text-muted-foreground">
                 कृपया ध्यान दें: लाइव गेम राउंड केवल रात 8:00 बजे से 11:00 बजे तक ही उपलब्ध रहेगा।
               </AlertDescription>
             </Alert>

@@ -97,10 +97,10 @@ export default {
         },
         'neon-glow': {
           '0%, 100%': {
-            'text-shadow': '0 0 2px hsl(var(--primary-foreground)), 0 0 5px hsl(var(--primary-foreground)), 0 0 10px hsl(var(--primary))'
+            'text-shadow': '0 0 2px hsl(var(--primary)), 0 0 5px hsl(var(--primary)), 0 0 10px #fff'
           },
           '50%': {
-            'text-shadow': '0 0 5px hsl(var(--primary-foreground)), 0 0 10px hsl(var(--primary-foreground)), 0 0 20px hsl(var(--primary))'
+            'text-shadow': '0 0 5px hsl(var(--primary)), 0 0 10px hsl(var(--primary)), 0 0 20px #fff'
           }
         }
       },
