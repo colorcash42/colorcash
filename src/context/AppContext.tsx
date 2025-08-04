@@ -15,6 +15,7 @@ import {
   getBets, 
   getTransactions, 
   placeBetAction,
+  placeOddEvenBetAction,
   requestDepositAction,
   requestWithdrawalAction,
   handleTransactionAction,
@@ -23,7 +24,8 @@ import {
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
-type BetType = 'color' | 'number' | 'size' | 'trio';
+type ColorCashBetType = 'color' | 'number' | 'size' | 'trio';
+type OddEvenBetType = 'Odd' | 'Even';
 
 interface AppContextType {
   user: User | null;
@@ -43,7 +45,8 @@ interface AppContextType {
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  placeBet: (amount: number, betType: BetType, betValue: string | number) => Promise<any>;
+  placeBet: (amount: number, betType: ColorCashBetType, betValue: string | number) => Promise<any>;
+  placeOddEvenBet: (amount: number, betValue: OddEvenBetType) => Promise<any>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
@@ -145,7 +148,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await signInWithEmailAndPassword(auth, email, pass);
       toast({
         title: "Login Successful",
-        description: "Welcome back to ColorCash!",
+        description: "Welcome back!",
       });
       // onAuthStateChanged will handle the redirect
     } catch (error: any) {
@@ -162,7 +165,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await createUserWithEmailAndPassword(auth, email, pass);
       toast({
         title: "Account Created",
-        description: "Welcome to ColorCash! You are now logged in.",
+        description: "Welcome! You are now logged in.",
       });
       // onAuthStateChanged will handle user state and redirect
     } catch (error: any) {
@@ -188,13 +191,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // onAuthStateChanged will handle the redirect
   };
 
-  const placeBet = async (amount: number, betType: BetType, betValue: string | number) => {
+  const placeBet = async (amount: number, betType: ColorCashBetType, betValue: string | number) => {
     if (!user) {
       const failResult = { success: false, message: "User not logged in" };
       toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
       return failResult;
     };
     const result = await placeBetAction(user.uid, amount, betType, betValue);
+    
+    if (!result.success) {
+      toast({
+        variant: "destructive",
+        title: "Bet Failed",
+        description: result.message,
+      });
+    }
+
+    await fetchData();
+    return result;
+  };
+  
+  const placeOddEvenBet = async (amount: number, betValue: OddEvenBetType) => {
+    if (!user) {
+      const failResult = { success: false, message: "User not logged in" };
+      toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
+      return failResult;
+    };
+    const result = await placeOddEvenBetAction(user.uid, amount, betValue);
     
     if (!result.success) {
       toast({
@@ -293,6 +316,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     signup,
     logout,
     placeBet,
+    placeOddEvenBet,
     requestDeposit,
     requestWithdrawal,
     handleTransaction,

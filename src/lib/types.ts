@@ -2,7 +2,8 @@ import { FieldValue } from "firebase/firestore";
 
 export type Bet = {
   id: string;
-  betType: "color" | "number" | "size" | "trio";
+  gameId: 'colorcash' | 'oddeven'; // identify the game
+  betType: "color" | "number" | "size" | "trio" | "oddOrEven";
   betValue: string | number;
   amount: number;
   outcome: "win" | "loss";

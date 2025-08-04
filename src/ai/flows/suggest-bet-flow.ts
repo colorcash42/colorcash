@@ -12,6 +12,7 @@ import {z} from 'genkit';
 
 // We only need a subset of the Bet type for the prompt.
 const BetHistoryItemSchema = z.object({
+  gameId: z.string().optional(),
   betType: z.string(),
   betValue: z.any(),
   outcome: z.string(),

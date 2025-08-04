@@ -81,9 +81,9 @@ export async function getPendingTransactions() {
 
 
 // --- MUTATION FUNCTIONS (SERVER ACTIONS) ---
-type BetType = 'color' | 'number' | 'size' | 'trio';
+type BetType = 'color' | 'number' | 'size' | 'trio' | 'oddOrEven';
 
-interface BetResult {
+interface ColorCashBetResult {
     isWin: boolean;
     payout: number;
     winningNumber: number;
@@ -91,7 +91,7 @@ interface BetResult {
     winningSize: string;
 }
 
-export async function placeBetAction(userId: string, amount: number, betType: BetType, betValue: string | number): Promise<{ success: boolean; message: string; result?: BetResult; }> {
+export async function placeBetAction(userId: string, amount: number, betType: BetType, betValue: string | number): Promise<{ success: boolean; message: string; result?: ColorCashBetResult; }> {
     try {
         const userDocRef = doc(db, "users", userId);
         const betsCollectionRef = collection(db, `users/${userId}/bets`);
@@ -108,8 +108,6 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             }
             
             // --- FAIR GAME LOGIC ---
-            // The logic for biased results based on bet amount has been removed.
-            // Every bet now has the same fair chance of winning based on the game rules.
             const winningNumber = Math.floor(Math.random() * 10); // 0-9. Fair for all bets.
 
             let winningColor = '';
@@ -177,6 +175,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
+                gameId: 'colorcash',
                 betType,
                 betValue,
                 amount,
@@ -198,6 +197,71 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
     } catch (e: any) {
         console.error("placeBetAction failed: ", e);
+        return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
+    }
+}
+
+interface OddEvenBetResult {
+    isWin: boolean;
+    payout: number;
+    winningNumber: number;
+}
+
+export async function placeOddEvenBetAction(userId: string, amount: number, betValue: 'Odd' | 'Even'): Promise<{ success: boolean; message: string; result?: OddEvenBetResult; }> {
+    try {
+        const userDocRef = doc(db, "users", userId);
+        const betsCollectionRef = collection(db, `users/${userId}/bets`);
+
+        const betResult = await runTransaction(db, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (!userDoc.exists()) {
+                throw "User document does not exist!";
+            }
+            const currentBalance = userDoc.data().walletBalance;
+
+            if (amount > currentBalance) {
+                throw "Insufficient balance";
+            }
+            
+            // --- FAIR GAME LOGIC ---
+            const winningNumber = Math.floor(Math.random() * 6) + 1; // 1-6
+            const isWinningNumberEven = winningNumber % 2 === 0;
+
+            let isWin = false;
+            if ((betValue === 'Even' && isWinningNumberEven) || (betValue === 'Odd' && !isWinningNumberEven)) {
+                isWin = true;
+            }
+            
+            const payoutRate = 2;
+            const payout = isWin ? amount * payoutRate : 0;
+            const newBalance = currentBalance - amount + payout;
+
+            transaction.update(userDocRef, { walletBalance: newBalance });
+
+            const newBetRef = doc(betsCollectionRef);
+            transaction.set(newBetRef, {
+                gameId: 'oddeven',
+                betType: 'oddOrEven',
+                betValue,
+                amount,
+                outcome: isWin ? "win" : "loss",
+                payout,
+                timestamp: serverTimestamp(),
+            });
+            
+            return { isWin, payout, winningNumber };
+        });
+
+        revalidatePath('/dashboard');
+
+        return { 
+            success: true, 
+            result: { ...betResult },
+            message: betResult.isWin ? `You won ₹${betResult.payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
+        };
+
+    } catch (e: any) {
+        console.error("placeOddEvenBetAction failed: ", e);
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
     }
 }
@@ -322,7 +386,9 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
 
 export async function getGuruSuggestionAction(history: Bet[]): Promise<{ suggestion?: string, error?: string }> {
   try {
-    const result = await suggestBet({ history });
+    // We only care about colorcash history for the guru for now.
+    const colorCashHistory = history.filter(b => b.gameId === 'colorcash' || !b.gameId);
+    const result = await suggestBet({ history: colorCashHistory });
     return { suggestion: result.suggestion };
   } catch (error) {
     console.error('Error getting suggestion:', error);

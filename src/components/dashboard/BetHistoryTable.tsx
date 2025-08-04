@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Dices, Palette } from "lucide-react";
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -48,6 +49,8 @@ const getBetDisplayValue = (bet: Bet) => {
             return <span className="font-medium">{trioMap[bet.betValue as string] || bet.betValue}</span>
         case 'size':
             return <span className="font-medium">{bet.betValue}</span>
+        case 'oddOrEven':
+            return <span className="font-medium">{bet.betValue}</span>
         default:
             return <span className="font-medium">{bet.betValue}</span>
     }
@@ -71,6 +74,7 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
             <Table>
             <TableHeader>
                 <TableRow>
+                <TableHead>Game</TableHead>
                 <TableHead>Bet On</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Bet Amount</TableHead>
@@ -82,13 +86,19 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
             <TableBody>
                 {displayBets.length === 0 ? (
                     <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24">
+                        <TableCell colSpan={7} className="text-center h-24">
                             You haven't placed any bets yet.
                         </TableCell>
                     </TableRow>
                 ) : (
                     displayBets.map((bet) => (
                         <TableRow key={bet.id}>
+                        <TableCell>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                { (bet.gameId === 'colorcash' || !bet.gameId) ? <Palette className="h-4 w-4" /> : <Dices className="h-4 w-4" />}
+                                <span className="capitalize">{bet.gameId === 'oddeven' ? "Odd/Even" : "ColorCash"}</span>
+                            </div>
+                        </TableCell>
                         <TableCell>
                             {getBetDisplayValue(bet)}
                         </TableCell>
