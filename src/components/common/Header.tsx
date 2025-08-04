@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
 import { HelpDialog } from "./HelpDialog";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 
 const navLinks = [
     { href: "/dashboard", label: "Games", lobbyLabel: "Lobby", icon: Gem },
@@ -40,6 +41,12 @@ export function Header() {
   };
   
   const showAdminLink = isUserAdmin && viewAsAdmin;
+  
+  const getInitials = (email: string | null | undefined): string => {
+    if (!email) return "";
+    const name = email.split('@')[0];
+    return name.substring(0, 2).toUpperCase();
+  }
 
   return (
     <>
@@ -97,8 +104,12 @@ export function Header() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar>
+                    <AvatarFallback>
+                        {user ? getInitials(user.email) : <User className="h-5 w-5" />}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="sr-only">Open user menu</span>
                 </Button>
               </DropdownMenuTrigger>
