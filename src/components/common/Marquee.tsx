@@ -1,8 +1,6 @@
-
 "use client";
 
 import React from 'react';
-import { cn } from '@/lib/utils';
 
 const marqueeMessages = [
   "Welcome to ColorCash! 🚀",
@@ -12,18 +10,21 @@ const marqueeMessages = [
   "24/7 customer support available. 24/7 ग्राहक सहायता उपलब्ध है। 🕒"
 ];
 
+// Repeat messages to create a seamless loop effect
+const extendedMessages = [...marqueeMessages, ...marqueeMessages, ...marqueeMessages];
+
 export function Marquee() {
   return (
     <div className="relative flex w-full overflow-x-hidden bg-secondary text-secondary-foreground py-2 rounded-lg border">
-      <div className="py-2 animate-marquee whitespace-nowrap">
-        {marqueeMessages.map((msg, i) => (
+      <div className="flex animate-marquee whitespace-nowrap">
+        {extendedMessages.map((msg, i) => (
           <span key={`p1-${i}`} className="mx-8 text-sm font-medium">
             {msg}
           </span>
         ))}
       </div>
-       <div className="absolute top-0 py-2 animate-marquee2 whitespace-nowrap">
-        {marqueeMessages.map((msg, i) => (
+       <div className="absolute top-0 flex pt-2 animate-marquee2 whitespace-nowrap">
+         {extendedMessages.map((msg, i) => (
           <span key={`p2-${i}`} className="mx-8 text-sm font-medium">
             {msg}
           </span>
