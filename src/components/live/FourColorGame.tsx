@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
@@ -8,11 +8,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { Gem, Loader2, Clock, PartyPopper } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from '../ui/progress';
 import { Timestamp } from 'firebase/firestore';
 import { useSound } from '@/hooks/use-sound';
-import { cn } from '@/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+import type { LiveBet } from '@/lib/types';
 
 
 const getRemainingSeconds = (endTime: string | Date | Timestamp | null): number => {
@@ -58,13 +57,13 @@ function GameTimer({ round }) {
 
 
 export function FourColorGame() {
-  const { walletBalance, placeFourColorBet, liveGameRound } = useAppContext();
+  const { walletBalance, placeFourColorBet, liveGameRound, userLiveBets } = useAppContext();
   const [amount, setAmount] = useState('10');
   const [betOnColor, setBetOnColor] = useState<'Red' | 'Yellow' | 'Black' | 'Blue'>('Red');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  const playBetSound = useSound('/sounds/bet.mp3');
+  const playBetSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fbet.mp3?alt=media&token=1434c114-53c7-4df3-92f7-234f59846114');
 
   const handleBet = async () => {
     setIsLoading(true);
@@ -96,6 +95,16 @@ export function FourColorGame() {
     setAmount(current => (parseFloat(current || '0') + presetAmount).toString());
   };
 
+  const userBetsByColor = useMemo(() => {
+    const bets: Record<string, number> = { Red: 0, Yellow: 0, Black: 0, Blue: 0 };
+    userLiveBets.forEach((bet: LiveBet) => {
+        if (bet.betOnColor) {
+            bets[bet.betOnColor] += bet.amount;
+        }
+    });
+    return bets;
+  }, [userLiveBets]);
+
   const renderGameContent = () => {
     if (!liveGameRound) {
         return (
@@ -124,6 +133,14 @@ export function FourColorGame() {
     }
 
     if (liveGameRound.status === 'betting') {
+        const colors: Array<'Red' | 'Yellow' | 'Black' | 'Blue'> = ['Red', 'Yellow', 'Black', 'Blue'];
+        const colorClasses = {
+            Red: "bg-red-500/20 hover:bg-red-500/40 data-[state=on]:bg-red-500 data-[state=on]:text-white",
+            Yellow: "bg-yellow-400/20 hover:bg-yellow-400/40 data-[state=on]:bg-yellow-400 data-[state=on]:text-black",
+            Black: "bg-zinc-700/20 hover:bg-zinc-700/40 data-[state=on]:bg-black data-[state=on]:text-white",
+            Blue: "bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+        };
+        
         return (
              <div className="animate-fade-in space-y-4">
                 <GameTimer round={liveGameRound} />
@@ -131,10 +148,18 @@ export function FourColorGame() {
                  <div>
                     <Label className="mb-2 block font-semibold">1. Select a Color</Label>
                     <ToggleGroup type="single" value={betOnColor} onValueChange={(val: any) => val && setBetOnColor(val)} className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <ToggleGroupItem value="Red" aria-label="Bet on Red" className="h-20 text-xl bg-red-500/20 hover:bg-red-500/40 data-[state=on]:bg-red-500 data-[state=on]:text-white">Red</ToggleGroupItem>
-                        <ToggleGroupItem value="Yellow" aria-label="Bet on Yellow" className="h-20 text-xl bg-yellow-400/20 hover:bg-yellow-400/40 data-[state=on]:bg-yellow-400 data-[state=on]:text-black">Yellow</ToggleGroupItem>
-                        <ToggleGroupItem value="Black" aria-label="Bet on Black" className="h-20 text-xl bg-zinc-700/20 hover:bg-zinc-700/40 data-[state=on]:bg-black data-[state=on]:text-white">Black</ToggleGroupItem>
-                        <ToggleGroupItem value="Blue" aria-label="Bet on Blue" className="h-20 text-xl bg-blue-500/20 hover:bg-blue-500/40 data-[state=on]:bg-blue-500 data-[state=on]:text-white">Blue</ToggleGroupItem>
+                        {colors.map(color => (
+                            <div key={color} className="relative">
+                                <ToggleGroupItem value={color} aria-label={`Bet on ${color}`} className={`w-full h-20 text-xl ${colorClasses[color]}`}>
+                                    {color}
+                                </ToggleGroupItem>
+                                {userBetsByColor[color] > 0 && (
+                                    <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        ₹{userBetsByColor[color]}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </ToggleGroup>
                  </div>
 

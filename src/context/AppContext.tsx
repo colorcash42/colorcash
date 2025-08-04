@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import type { Bet, Transaction, UserData, LiveGameRound } from "@/lib/types";
+import type { Bet, Transaction, UserData, LiveGameRound, LiveBet } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_UIDS } from "@/lib/admins";
 import { 
@@ -27,7 +27,7 @@ import {
   startFourColorRoundAction,
   endFourColorRoundAction,
 } from "@/app/actions";
-import { doc, onSnapshot, Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, Timestamp, collection, query, where } from "firebase/firestore";
 
 type Theme = "light" | "dark" | "dark-pro";
 type ColorCashBetType = 'color' | 'number' | 'size' | 'trio';
@@ -66,6 +66,7 @@ interface AppContextType {
   transactions: Transaction[];
   pendingTransactions: Transaction[]; // For admin
   liveGameRound: LiveGameRound | null;
+  userLiveBets: LiveBet[];
   theme: Theme;
   setTheme: (theme: Theme) => void;
   isUserAdmin: boolean;
@@ -101,6 +102,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [liveGameRound, setLiveGameRound] = useState<LiveGameRound | null>(null);
+  const [userLiveBets, setUserLiveBets] = useState<LiveBet[]>([]);
   const [theme, setThemeState] = useState<Theme>('dark-pro');
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const [soundEnabled, setSoundEnabledState] = useState(true);
@@ -179,6 +181,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Listener for user's bets in the current live round
+  useEffect(() => {
+    if (user && liveGameRound) {
+        const betsRef = collection(db, "bets");
+        const q = query(betsRef, where("userId", "==", user.uid), where("roundId", "==", liveGameRound.id));
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const betsData = querySnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as LiveBet);
+            setUserLiveBets(betsData);
+        }, (error) => {
+            console.error("Failed to fetch user's live bets:", error);
+            setUserLiveBets([]);
+        });
+
+        return () => unsubscribe();
+    } else {
+        // Clear bets if there's no user or no active round
+        setUserLiveBets([]);
+    }
+  }, [user, liveGameRound]);
 
   const setTheme = (theme: Theme) => {
     setThemeState(theme);
@@ -317,7 +340,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
        toast({ variant: "destructive", title: "Bet Failed", description: result.message });
     }
 
-    await fetchData(); // Fetch data to update wallet balance
+    // No need to call fetchData() here for wallet balance because the listener on user bets will trigger UI updates
+    // And wallet balance is deducted server-side, and user doc changes should also be listened to if needed.
+    // However, to keep it simple and ensure other data like all-bets history is updated, we can leave it.
+    await fetchData();
     return result;
   };
 
@@ -478,6 +504,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     transactions,
     pendingTransactions,
     liveGameRound,
+    userLiveBets,
     login,
     signup,
     logout,
