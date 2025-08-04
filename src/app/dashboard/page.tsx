@@ -5,11 +5,13 @@ import { Header } from "@/components/common/Header";
 import { BetHistoryTable } from "@/components/dashboard/BetHistoryTable";
 import { useAppContext } from "@/context/AppContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent } from "@/components/ui/card";
-import { Dices, Palette, ArrowRight, Gamepad2 } from "lucide-react";
+import { Dices, Palette, ArrowRight, Gamepad2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/components/common/Marquee";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+
 
 const GameCard = ({ icon, title, description, href, className }) => (
     <Card className={cn("flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300", className)}>
@@ -54,6 +56,14 @@ export default function DashboardPage() {
             <div className="mb-8">
                 <Marquee />
             </div>
+
+            <Alert className="mb-8 bg-primary/5 border-primary/20">
+              <Clock className="h-4 w-4" />
+              <AlertTitle>लाइव गेम का समय</AlertTitle>
+              <AlertDescription>
+                कृपया ध्यान दें: लाइव गेम राउंड केवल रात 8:00 बजे से 11:00 बजे तक ही उपलब्ध रहेगा।
+              </AlertDescription>
+            </Alert>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
               <GameCard 
