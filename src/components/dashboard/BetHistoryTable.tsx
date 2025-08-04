@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Dices, Palette } from "lucide-react";
+import { Dices, Gamepad2, Palette } from "lucide-react";
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -24,7 +24,24 @@ const toDate = (timestamp: string | Date): Date => {
   return timestamp;
 };
 
+const getGameDisplay = (bet: Bet) => {
+    switch(bet.gameId) {
+        case 'colorcash':
+            return <><Palette className="h-4 w-4" /> ColorCash</>;
+        case 'oddeven':
+            return <><Dices className="h-4 w-4" /> Odd/Even</>;
+        case 'spin-and-win':
+            return <><Gamepad2 className="h-4 w-4" /> Spin & Win</>;
+        default:
+            return <><Palette className="h-4 w-4" /> ColorCash</>;
+    }
+}
+
 const getBetDisplayValue = (bet: Bet) => {
+    if (bet.gameId === 'spin-and-win') {
+        return <span className="font-medium text-muted-foreground italic">Played Round</span>;
+    }
+
     switch (bet.betType) {
         case 'color':
             let colorClass = '';
@@ -94,9 +111,8 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                     displayBets.map((bet) => (
                         <TableRow key={bet.id}>
                         <TableCell>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                { (bet.gameId === 'colorcash' || !bet.gameId) ? <Palette className="h-4 w-4" /> : <Dices className="h-4 w-4" />}
-                                <span className="capitalize">{bet.gameId === 'oddeven' ? "Odd/Even" : "ColorCash"}</span>
+                             <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                {getGameDisplay(bet)}
                             </div>
                         </TableCell>
                         <TableCell>
@@ -105,14 +121,14 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                         <TableCell className="capitalize text-muted-foreground">{bet.betType}</TableCell>
                         <TableCell className="text-right tabular-nums">₹{bet.amount.toFixed(2)}</TableCell>
                         <TableCell className="text-center">
-                            <Badge variant={bet.outcome === 'win' ? "default" : "destructive"}>
+                            <Badge variant={bet.outcome === 'win' ? "default" : bet.outcome === 'loss' ? "destructive" : 'secondary'}>
                                 {bet.outcome}
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-semibold"
                         >
-                            <span className={bet.outcome === 'win' ? 'text-primary' : 'text-destructive'}>
-                                {bet.outcome === 'win' ? '+' : '-'}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
+                            <span className={bet.outcome === 'win' ? 'text-primary' : bet.outcome === 'loss' ? 'text-destructive' : 'text-muted-foreground'}>
+                                {bet.outcome === 'win' ? '+' : bet.outcome === 'loss' ? '-' : ''}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
                             </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground text-xs">

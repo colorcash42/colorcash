@@ -2,11 +2,11 @@ import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Bet = {
   id: string;
-  gameId: 'colorcash' | 'oddeven'; // identify the game
-  betType: "color" | "number" | "size" | "trio" | "oddOrEven";
+  gameId: 'colorcash' | 'oddeven' | 'spin-and-win'; // identify the game
+  betType: "color" | "number" | "size" | "trio" | "oddOrEven" | "live";
   betValue: string | number;
   amount: number;
-  outcome: "win" | "loss";
+  outcome: "win" | "loss" | "pending";
   payout: number;
   timestamp: string; // Changed from Date | FieldValue to string for serialization
 };
@@ -42,5 +42,6 @@ export type LiveBet = {
   amount: number;
   payout: number | null;
   status: 'pending' | 'won' | 'lost';
+  outcome: 'pending' | 'win' | 'loss';
   timestamp: string | FieldValue;
 }

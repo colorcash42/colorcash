@@ -53,7 +53,7 @@ export async function getWalletBalance(userId: string) {
   return { balance };
 }
 
-export async function getBets(userId:string) {
+export async function getBets(userId:string): Promise<{ bets: Bet[] }> {
   // Query both instant and live bets
   const betsCollectionRef = collection(db, `users/${userId}/bets`);
   const qInstant = query(betsCollectionRef, orderBy("timestamp", "desc"));
@@ -67,7 +67,21 @@ export async function getBets(userId:string) {
   ]);
 
   const instantBets = instantSnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Bet);
-  const liveBets = liveSnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Bet);
+
+  // Map live bets to the Bet type for consistency in the history table
+  const liveBets = liveSnapshot.docs.map(doc => {
+    const data = doc.data();
+    return serializeObject({
+      id: doc.id,
+      gameId: data.gameId || 'spin-and-win',
+      betType: 'live', // Use a specific type for live games
+      betValue: `Round: ${data.roundId.slice(-6)}`, // Display round ID for context
+      amount: data.amount,
+      outcome: data.outcome || (data.status === 'won' ? 'win' : data.status === 'lost' ? 'loss' : 'pending'),
+      payout: data.payout ?? 0,
+      timestamp: data.timestamp,
+    }) as Bet;
+  });
 
   // Merge and sort
   const allBets = [...instantBets, ...liveBets].sort((a, b) => {
@@ -466,6 +480,7 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
                 amount,
                 payout: null, // Payout is calculated by the cloud function
                 status: 'pending',
+                outcome: 'pending',
                 timestamp: serverTimestamp() as any, // Let server set timestamp
             };
 
@@ -476,6 +491,7 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
         });
         
         revalidatePath('/live'); // To update wallet balance display
+        revalidatePath('/dashboard'); // To update bet history
         return { success: true, message: "Bet placed successfully!" };
     } catch (e: any) {
         console.error("placeLiveBetAction failed: ", e);
