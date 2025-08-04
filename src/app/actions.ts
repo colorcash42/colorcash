@@ -39,7 +39,7 @@ async function ensureUserDocument(userId: string) {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
         await writeBatch(db)
-            .set(userDocRef, { walletBalance: 1000, uid: userId })
+            .set(userDocRef, { walletBalance: 50, uid: userId })
             .commit();
     }
     return userDocRef;
