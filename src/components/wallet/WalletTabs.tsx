@@ -227,7 +227,6 @@ function ReferAndEarn() {
             } catch (err) {
                 // If sharing fails (e.g., user cancels or permission is denied),
                 // fall back to copying to clipboard.
-                console.error("Share failed:", err);
                 navigator.clipboard.writeText(shareText);
                 toast({ title: "Copied to clipboard!", description: "Sharing was canceled, so we copied the text for you." });
             }
