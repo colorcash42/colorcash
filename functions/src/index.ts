@@ -1,3 +1,4 @@
+
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
@@ -6,7 +7,7 @@ const db = admin.firestore();
 
 // Game configuration
 const ROUND_INTERVAL_MINUTES = 2; // Total round time
-const BETTING_DURATION_SECONDS = 105; // Betting time
+const BETTING_DURATION_SECONDS = 105; // Betting time (must be less than ROUND_INTERVAL_MINUTES * 60)
 const MULTIPLIERS = [0, 2, 3, 5, 2, 0, 3, 2]; // 0 is BUST
 
 /**
@@ -23,38 +24,40 @@ export const manageSpinAndWin = functions
   .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
     const liveStatusRef = db.collection("liveGameStatus").doc("current");
-    const currentRoundDoc = await liveStatusRef.get();
+
+    const batch = db.batch();
 
     // --- 1. Process Previous Round (if it exists and was betting) ---
-    if (currentRoundDoc.exists) {
-      const currentRound = currentRoundDoc.data();
+    // We get the document *before* starting the new round.
+    const previousRoundDoc = await liveStatusRef.get();
+    if (previousRoundDoc.exists) {
+      const previousRound = previousRoundDoc.data();
 
       // Only process if the round was in the 'betting' state.
-      if (currentRound && currentRound.status === "betting") {
-        const roundId = currentRound.id;
+      // This prevents processing a round that was already 'finished'.
+      if (previousRound && previousRound.status === "betting") {
+        const roundId = previousRound.id;
         console.log(`Processing results for round ${roundId}...`);
 
         // Determine winner and process bets
         const winningMultiplier = MULTIPLIERS[Math.floor(Math.random() * MULTIPLIERS.length)];
         console.log(`Winning multiplier for round ${roundId} is: ${winningMultiplier}`);
 
-        // Update the round to 'finished' state first to prevent race conditions
-        await liveStatusRef.update({
+        // Update the round to 'finished' state. We will update the same doc ref later.
+        batch.update(liveStatusRef, {
           status: "finished",
           winningMultiplier: winningMultiplier,
           resultTimestamp: now,
         });
 
-        // Query the root 'bets' collection for this round
         const betsSnapshot = await db
           .collection("bets")
           .where("roundId", "==", roundId)
           .get();
 
         if (betsSnapshot.empty) {
-          console.log("No bets were placed in this round.");
+          console.log(`No bets were placed in round ${roundId}.`);
         } else {
-          const batch = db.batch();
           const userPayouts = new Map<string, number>();
 
           betsSnapshot.docs.forEach((doc) => {
@@ -79,14 +82,13 @@ export const manageSpinAndWin = functions
              });
           }
 
-          console.log(`Processing ${betsSnapshot.size} bets...`);
-          await batch.commit();
-          console.log("All bets processed and payouts distributed for round", roundId);
+          console.log(`Processing ${betsSnapshot.size} bets for round ${roundId}...`);
         }
       }
     }
 
     // --- 2. Start a New Round ---
+    // This will overwrite the 'finished' state of the previous round with the new one.
     const newRoundId = `round-${context.timestamp || now.toMillis()}`;
     console.log(`Starting new Spin & Win round: ${newRoundId}`);
 
@@ -94,9 +96,8 @@ export const manageSpinAndWin = functions
       now.toMillis() + BETTING_DURATION_SECONDS * 1000,
     );
     const endTime = admin.firestore.Timestamp.fromMillis(
-        spinTime.toMillis() + (ROUND_INTERVAL_MINUTES * 60 - BETTING_DURATION_SECONDS) * 1000,
+        now.toMillis() + ROUND_INTERVAL_MINUTES * 60 * 1000,
     );
-
 
     const newRound = {
       id: newRoundId,
@@ -108,10 +109,13 @@ export const manageSpinAndWin = functions
       resultTimestamp: null,
     };
 
-    // Set the new round details in the live status document
-    await liveStatusRef.set(newRound);
-    console.log(`Round ${newRoundId} started. Betting is open.`);
+    // Set the new round details, overwriting the old one.
+    batch.set(liveStatusRef, newRound);
 
+    // Commit all batched writes together.
+    await batch.commit();
+
+    console.log(`Round ${newRoundId} started. Betting is open.`);
     return null;
   });
 
@@ -122,5 +126,3 @@ export const helloWorld = functions.https.onRequest((request, response) => {
   functions.logger.info("Hello logs!", { structuredData: true });
   response.send("Hello from Firebase!");
 });
-
-    

@@ -89,7 +89,7 @@ const BettingContent = ({ handlePlaceBet, betAmount, setBetAmount, isBetting }) 
     </div>
 );
 
-const WaitingContent = ({ title, icon: Icon }) => (
+const InfoContent = ({ title, icon: Icon }) => (
     <div className="flex flex-col items-center justify-center h-48 w-48 text-center">
         <Icon className="h-24 w-24 text-primary/50 animate-pulse" />
         <p className="font-semibold text-lg mt-4">{title}</p>
@@ -109,6 +109,7 @@ export default function LiveGamePage() {
         const liveStatusDocRef = doc(db, "liveGameStatus", "current");
 
         const unsubscribe = onSnapshot(liveStatusDocRef, (doc) => {
+            setIsLoading(true); // Reset loading state on each update
             if (doc.exists()) {
                 const roundData = doc.data();
                 const round: LiveGameRound = {
@@ -131,7 +132,7 @@ export default function LiveGamePage() {
     }, []);
 
     useEffect(() => {
-        // Refetch user data when round is finished to update balance
+        // Refetch user data when a round finishes to update balance
         if (currentRound?.status === 'finished') {
             fetchData();
         }
@@ -162,43 +163,34 @@ export default function LiveGamePage() {
     };
 
     const renderHeader = () => {
-        if (isLoading) {
-            return { title: "Connecting...", description: "Connecting to Live Game..." };
-        }
-        if (!currentRound) {
-            return { title: "Game Offline", description: "Waiting for the game to start." };
-        }
+        if (isLoading) return { title: "Connecting...", description: "Connecting to the Live Game server..." };
+        if (!currentRound) return { title: "Game Offline", description: "Waiting for a new game to start." };
+
         switch (currentRound.status) {
             case 'betting':
-                return { title: "Betting is Open!", description: "Place your bet before the time runs out!" };
-            case 'spinning':
-                return { title: "Spinning...", description: "The wheel is in motion. No more bets!" };
+                return { title: "Betting is Open!", description: "Place your bet before the time runs out." };
             case 'finished':
                 const multiplier = currentRound.winningMultiplier;
                 const resultText = multiplier === 0 ? 'BUST' : `${multiplier}x WIN`;
-                return { title: `Round Finished: ${resultText}`, description: "Waiting for the next round to begin..." };
+                return { title: `Round Finished: ${resultText}`, description: "Waiting for the next round to begin." };
             default:
                 return { title: "Standby", description: "The game is currently in standby." };
         }
     };
     
     const renderContent = () => {
-        if (isLoading) {
-             return <WaitingContent title="Connecting..." icon={Loader2} />;
-        }
-         if (!currentRound) {
-            return <WaitingContent title="Waiting for Round..." icon={Hourglass} />;
-        }
+        if (isLoading) return <InfoContent title="Connecting..." icon={Loader2} />;
+        if (!currentRound) return <InfoContent title="Waiting for Round..." icon={Hourglass} />;
 
         switch (currentRound.status) {
             case 'betting':
                 return <CountdownCircle duration={BETTING_DURATION_SECONDS} targetTime={currentRound.spinTime} />;
-            case 'spinning':
-                 return <WaitingContent title="Spinning!" icon={Zap} />;
             case 'finished':
-                 return <WaitingContent title="Next round soon..." icon={Timer} />;
+                 // This state covers the time between a finished round and the start of a new one.
+                 return <InfoContent title="Next round soon..." icon={Timer} />;
             default:
-                return <WaitingContent title="Please wait..." icon={Hourglass} />;
+                // This can be a short-lived state or a fallback.
+                return <InfoContent title="Please wait..." icon={Hourglass} />;
         }
     }
     
