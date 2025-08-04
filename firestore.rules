@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Users can only read/write their own bets and transactions
+    match /users/{userId}/{subcollection}/{docId} {
+       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Admins can read the global transaction list for approval
+    match /transactions/{transactionId} {
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow write: if false; // Only server actions can write/update status
+    }
+    
+    // --- Live Game Rules ---
+
+    // Anyone can read the current state of live game rounds
+    match /liveGames/{roundId} {
+        allow read: if true;
+        allow write: if false; // Only the server (Firebase Function) can create/update rounds
+    }
+
+    // Users can create their own bets in a round
+    // Users can only read their own bet, not others.
+    match /liveGames/{roundId}/bets/{betId} {
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow read: if request.auth != null && get(/databases/$(database)/documents/liveGames/$(roundId)/bets/$(betId)).data.userId == request.auth.uid;
+        allow update, delete: if false; // Bets cannot be changed or deleted
+    }
+
+  }
+}

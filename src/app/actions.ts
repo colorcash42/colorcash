@@ -1,16 +1,17 @@
 
 'use server';
 
-import type { Bet, Transaction } from "@/lib/types";
+import type { Bet, Transaction, LiveGameRound, LiveBet } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit } from "firebase/firestore";
 import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 
 // --- HELPER FUNCTIONS ---
 
 // Converts Firestore Timestamps to ISO strings for serialization
 const serializeObject = (obj: any) => {
+    if (!obj) return obj;
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -394,4 +395,62 @@ export async function getGuruSuggestionAction(history: Bet[]): Promise<{ suggest
     console.error('Error getting suggestion:', error);
     return { error: 'Sorry, the guru is currently meditating. Please try again later.' };
   }
+}
+
+// --- LIVE GAME ACTIONS ---
+
+export async function getLiveGameData(): Promise<{ currentRound: LiveGameRound | null }> {
+    const liveRoundsRef = collection(db, "liveGames");
+    const q = query(liveRoundsRef, orderBy("startTime", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return { currentRound: null };
+    }
+
+    const currentRound = serializeObject(querySnapshot.docs[0].data()) as LiveGameRound;
+    return { currentRound };
+}
+
+export async function placeLiveBetAction(userId: string, amount: number, roundId: string): Promise<{ success: boolean; message: string; }> {
+    if (!userId) return { success: false, message: "User not authenticated." };
+    if (!roundId) return { success: false, message: "No active game round." };
+
+    const userDocRef = doc(db, "users", userId);
+    const roundDocRef = doc(db, "liveGames", roundId);
+    const betDocRef = doc(collection(db, `liveGames/${roundId}/bets`));
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            const roundDoc = await transaction.get(roundDocRef);
+
+            if (!userDoc.exists()) throw new Error("User not found.");
+            if (!roundDoc.exists()) throw new Error("Game round not found.");
+            if (roundDoc.data().status !== 'betting') throw new Error("Betting for this round is closed.");
+
+            const currentBalance = userDoc.data().walletBalance;
+            if (amount > currentBalance) throw new Error("Insufficient balance.");
+
+            const newBalance = currentBalance - amount;
+
+            const newBet: Omit<LiveBet, 'id' | 'timestamp'> & { timestamp: any } = {
+                userId,
+                roundId,
+                amount,
+                payout: null,
+                status: 'pending',
+                timestamp: serverTimestamp(),
+            };
+
+            transaction.update(userDocRef, { walletBalance: newBalance });
+            transaction.set(betDocRef, newBet);
+        });
+        
+        revalidatePath('/live'); // To update wallet balance display
+        return { success: true, message: "Bet placed successfully!" };
+    } catch (e: any) {
+        console.error("placeLiveBetAction failed: ", e);
+        return { success: false, message: e.message || "An unknown error occurred." };
+    }
 }

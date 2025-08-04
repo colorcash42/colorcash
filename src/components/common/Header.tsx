@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings } from "lucide-react";
+import { CircleDollarSign, LogOut, Wallet, Gem, ShieldCheck, User, Settings, Gamepad2 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,8 @@ import React, { useState } from "react";
 import { SettingsDialog } from "./SettingsDialog";
 
 const navLinks = [
-    { href: "/dashboard", label: "Dashboard", icon: Gem },
+    { href: "/dashboard", label: "Games", icon: Gem },
+    { href: "/live", label: "Live Game", icon: Gamepad2 },
     { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 

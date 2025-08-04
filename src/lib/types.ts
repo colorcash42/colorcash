@@ -22,3 +22,24 @@ export type Transaction = {
   timestamp: string; // Changed from Date | FieldValue to string for serialization
   userTransactionId?: string; // ID of the transaction doc in the user's subcollection
 };
+
+// Types for the new Live "Spin & Win" Game
+export type LiveGameRound = {
+  id: string; // e.g., "round-202407281200"
+  status: 'betting' | 'spinning' | 'finished';
+  startTime: string;
+  spinTime: string; // When the betting phase ends and wheel starts spinning
+  endTime: string; // When the round is completely over and results are shown
+  winningMultiplier: number | null; // e.g., 2, 3, 5, or 0 for BUST
+  resultTimestamp: string | null;
+}
+
+export type LiveBet = {
+  id: string;
+  userId: string;
+  roundId: string;
+  amount: number;
+  payout: number | null;
+  status: 'pending' | 'won' | 'lost';
+  timestamp: string;
+}
