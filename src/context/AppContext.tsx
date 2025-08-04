@@ -226,13 +226,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // Data fetching is handled by onAuthStateChanged
-      router.push("/dashboard");
+      // Data fetching is handled by onAuthStateChanged, but we show the toast before redirect
       toast({
         variant: "success",
         title: "Login Successful",
         description: "Welcome back!",
       });
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -255,12 +255,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Manually fetch data right after signup to ensure context is updated before redirect
       await fetchData(newUser.uid);
 
-      router.push("/dashboard");
        toast({
         variant: "success",
         title: "Account Created!",
         description: docResult.message,
       });
+      router.push("/dashboard");
 
     } catch (error: any) {
       toast({
