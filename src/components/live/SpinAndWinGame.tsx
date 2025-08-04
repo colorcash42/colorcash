@@ -13,8 +13,6 @@ import {
   AlertTitle,
 } from "@/components/ui/alert"
 import { Progress } from '../ui/progress';
-import { getLiveGameData } from '@/app/actions';
-import type { LiveGameRound } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { useSound } from '@/hooks/use-sound';
 
@@ -141,26 +139,12 @@ function SpinningWheel({ winningMultiplier }: { winningMultiplier: number | null
 
 
 export function SpinAndWinGame() {
-  const { walletBalance, placeLiveBet, fetchData } = useAppContext();
-  const [currentRound, setCurrentRound] = useState<LiveGameRound | null>(null);
+  const { walletBalance, placeLiveBet, liveGameRound, fetchData } = useAppContext();
   const [amount, setAmount] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
   const playBetSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fbet.mp3?alt=media&token=1434c114-53c7-4df3-92f7-234f59846114');
-  
-  // Fetch initial game data and set up a poller
-  useEffect(() => {
-    const fetchGameData = async () => {
-      const { currentRound } = await getLiveGameData();
-      setCurrentRound(currentRound);
-    };
-
-    fetchGameData(); // Initial fetch
-    const interval = setInterval(fetchGameData, 5000); // Poll every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   const handleBet = async () => {
     const betAmount = parseFloat(amount);
@@ -172,14 +156,14 @@ export function SpinAndWinGame() {
       toast({ variant: "destructive", title: "Insufficient Balance" });
       return;
     }
-    if (!currentRound || currentRound.status !== 'betting') {
+    if (!liveGameRound || liveGameRound.status !== 'betting') {
         toast({ variant: "destructive", title: "Betting Closed", description: "The betting window for this round is over." });
         return;
     }
     
     setIsLoading(true);
     playBetSound();
-    const response = await placeLiveBet(betAmount, currentRound.id);
+    const response = await placeLiveBet(betAmount, liveGameRound.id);
     
     if (response.success) {
         toast({ title: "Bet Placed!", description: "Your bet has been accepted. Good luck!" });
@@ -199,11 +183,11 @@ export function SpinAndWinGame() {
   };
   
   const bettingDurationSeconds = useMemo(() => {
-      if (!currentRound?.startTime || !currentRound?.spinTime) return 105;
-      const start = (currentRound.startTime as Timestamp).toMillis();
-      const spin = (currentRound.spinTime as Timestamp).toMillis();
+      if (!liveGameRound?.startTime || !liveGameRound?.spinTime) return 105;
+      const start = (liveGameRound.startTime as Timestamp).toMillis();
+      const spin = (liveGameRound.spinTime as Timestamp).toMillis();
       return (spin - start) / 1000;
-  }, [currentRound])
+  }, [liveGameRound])
 
   return (
     <>
@@ -211,10 +195,10 @@ export function SpinAndWinGame() {
         <div className="space-y-6 flex-1 flex flex-col justify-center">
 
             {/* Game State Display */}
-            {currentRound ? (
+            {liveGameRound ? (
                 <>
-                    <SpinningWheel winningMultiplier={currentRound.winningMultiplier} />
-                    <GameTimer round={currentRound} bettingDuration={bettingDurationSeconds} />
+                    <SpinningWheel winningMultiplier={liveGameRound.winningMultiplier} />
+                    <GameTimer round={liveGameRound} bettingDuration={bettingDurationSeconds} />
                 </>
             ) : (
                 <div className="text-center p-8">
@@ -224,17 +208,17 @@ export function SpinAndWinGame() {
             )}
             
             {/* Last Round Result */}
-            {currentRound?.status === 'finished' && currentRound.winningMultiplier !== null && (
+            {liveGameRound?.status === 'finished' && liveGameRound.winningMultiplier !== null && (
                  <Alert className="bg-accent/50 border-primary/50 animate-fade-in">
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle className="font-headline">Previous Round Result</AlertTitle>
                     <AlertDescription>
-                        The winning multiplier was <span className="font-bold">{currentRound.winningMultiplier > 0 ? `x${currentRound.winningMultiplier}` : 'BUST'}</span>. A new round will start shortly.
+                        The winning multiplier was <span className="font-bold">{liveGameRound.winningMultiplier > 0 ? `x${liveGameRound.winningMultiplier}` : 'BUST'}</span>. A new round will start shortly.
                     </AlertDescription>
                 </Alert>
             )}
 
-            {currentRound?.status === 'betting' && (
+            {liveGameRound?.status === 'betting' && (
                 <div className="animate-fade-in space-y-4">
                      {/* Amount Input */}
                     <div>
@@ -266,7 +250,7 @@ export function SpinAndWinGame() {
                 </div>
             )}
 
-             {currentRound?.status === 'spinning' && (
+             {liveGameRound?.status === 'spinning' && (
                  <Alert>
                     <Clock className="h-4 w-4" />
                     <AlertTitle>Spinning!</AlertTitle>

@@ -6,8 +6,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import type { Bet, Transaction, UserData } from "@/lib/types";
+import { auth, db } from "@/lib/firebase";
+import type { Bet, Transaction, UserData, LiveGameRound } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_UIDS } from "@/lib/admins";
 import { 
@@ -23,12 +23,35 @@ import {
   getGuruSuggestionAction,
   changePasswordAction,
   ensureUserDocument,
-  placeLiveBetAction
+  placeLiveBetAction,
+  getLiveGameData,
 } from "@/app/actions";
+import { doc, onSnapshot, Timestamp } from "firebase/firestore";
 
 type Theme = "light" | "dark" | "dark-pro";
 type ColorCashBetType = 'color' | 'number' | 'size' | 'trio';
 type OddEvenBetType = 'Odd' | 'Even';
+
+// This helper function is now local to this file.
+const serializeObject = (obj: any): any => {
+    if (!obj) return obj;
+    if (obj instanceof Timestamp) {
+        return obj.toDate().toISOString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => serializeObject(item));
+    }
+    if (typeof obj === 'object') {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                newObj[key] = serializeObject(obj[key]);
+            }
+        }
+        return newObj;
+    }
+    return obj;
+};
 
 interface AppContextType {
   user: User | null;
@@ -39,6 +62,7 @@ interface AppContextType {
   bets: Bet[];
   transactions: Transaction[];
   pendingTransactions: Transaction[]; // For admin
+  liveGameRound: LiveGameRound | null;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   isUserAdmin: boolean;
@@ -71,6 +95,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
+  const [liveGameRound, setLiveGameRound] = useState<LiveGameRound | null>(null);
   const [theme, setThemeState] = useState<Theme>('dark-pro');
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const [soundEnabled, setSoundEnabledState] = useState(true);
@@ -89,7 +114,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setSoundEnabledState(JSON.parse(storedSound));
     }
     
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         fetchData(currentUser.uid); // Pass UID directly
@@ -103,7 +128,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     
-    return () => unsubscribe();
+    // Set up a real-time listener for the live game status
+    const liveStatusRef = doc(db, "liveGameStatus", "current");
+    const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
+        if (doc.exists()) {
+            const roundData = serializeObject(doc.data()) as LiveGameRound;
+            setLiveGameRound(roundData);
+        } else {
+            setLiveGameRound(null);
+        }
+    });
+
+
+    return () => {
+        unsubscribeAuth();
+        unsubscribeLiveGame();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
@@ -412,6 +452,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     bets,
     transactions,
     pendingTransactions,
+    liveGameRound,
     login,
     signup,
     logout,
