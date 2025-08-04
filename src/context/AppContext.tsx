@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import type { Bet, Transaction } from "@/lib/types";
+import type { Bet, Transaction, UserData } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_UIDS } from "@/lib/admins";
 import { 
-  getWalletBalance, 
+  getUserData,
   getBets, 
   getTransactions, 
   placeBetAction,
@@ -21,7 +21,8 @@ import {
   handleTransactionAction,
   getPendingTransactions,
   getGuruSuggestionAction,
-  changePasswordAction
+  changePasswordAction,
+  ensureUserDocument
 } from "@/app/actions";
 
 type Theme = "light" | "dark" | "dark-pro";
@@ -30,6 +31,7 @@ type OddEvenBetType = 'Odd' | 'Even';
 
 interface AppContextType {
   user: User | null;
+  userData: UserData | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   walletBalance: number;
@@ -44,7 +46,7 @@ interface AppContextType {
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
   login: (email: string, pass: string) => Promise<void>;
-  signup: (email: string, pass: string) => Promise<void>;
+  signup: (email: string, pass: string, referralCode?: string) => Promise<void>;
   logout: () => void;
   placeBet: (amount: number, betType: ColorCashBetType, betValue: string | number) => Promise<any>;
   placeOddEvenBet: (amount: number, betValue: OddEvenBetType) => Promise<any>;
@@ -61,6 +63,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -86,14 +89,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsLoading(false);
       if (currentUser) {
-        // Only redirect if they are on the login page
-        if (window.location.pathname === '/') {
-          router.push("/dashboard");
-        }
-      } else {
-        // If not logged in, redirect to login page
+        fetchData(currentUser.uid); // Pass UID directly
+      }
+      setIsLoading(false);
+
+      if (currentUser && window.location.pathname === '/') {
+        router.push("/dashboard");
+      } else if (!currentUser) {
         router.push("/");
       }
     });
@@ -114,30 +117,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const isLoggedIn = user !== null;
 
-  const fetchData = useCallback(async () => {
-    if (user) {
-      const isAdmin = ADMIN_UIDS.includes(user.uid);
+  const fetchData = useCallback(async (uid?: string) => {
+    const currentUid = uid || user?.uid;
+    if (currentUid) {
+        const isAdmin = ADMIN_UIDS.includes(currentUid);
 
-      // All users fetch their own data
-      const [balanceRes, betsRes, transactionsRes] = await Promise.all([
-        getWalletBalance(user.uid),
-        getBets(user.uid),
-        getTransactions(user.uid),
-      ]);
+        // All users fetch their own data
+        const [userDataRes, betsRes, transactionsRes] = await Promise.all([
+            getUserData(currentUid),
+            getBets(currentUid),
+            getTransactions(currentUid),
+        ]);
+        
+        const fullUserData = userDataRes.userData;
+        if(fullUserData) {
+            setUserData(fullUserData);
+            setWalletBalance(fullUserData.walletBalance);
+        }
 
-      setWalletBalance(balanceRes.balance);
-      setBets(betsRes.bets);
-      setTransactions(transactionsRes.transactions);
+        setBets(betsRes.bets);
+        setTransactions(transactionsRes.transactions);
 
-      // Only admins fetch all pending transactions
-      if (isAdmin) {
-        const pendingTransRes = await getPendingTransactions();
-        setPendingTransactions(pendingTransRes.transactions);
-      } else {
-        setPendingTransactions([]); // Ensure non-admins have an empty list
-      }
+        // Only admins fetch all pending transactions
+        if (isAdmin) {
+            const pendingTransRes = await getPendingTransactions();
+            setPendingTransactions(pendingTransRes.transactions);
+        } else {
+            setPendingTransactions([]); // Ensure non-admins have an empty list
+        }
     }
-  }, [user]);
+  }, [user?.uid]);
 
 
   useEffect(() => {
@@ -153,7 +162,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      // onAuthStateChanged will handle the redirect
+      // onAuthStateChanged will handle the redirect and data fetching
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -163,14 +172,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-   const signup = async (email: string, pass: string) => {
+   const signup = async (email: string, pass: string, referralCode?: string) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, pass);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const newUser = userCredential.user;
+      
+      // Now create the user document with referral logic
+      const docResult = await ensureUserDocument(newUser.uid, referralCode);
+
       toast({
-        title: "Account Created",
-        description: "Welcome! You are now logged in.",
+        title: "Account Created!",
+        description: docResult.message,
       });
-      // onAuthStateChanged will handle user state and redirect
+
+      // Manually fetch data right after signup to ensure context is updated
+      await fetchData(newUser.uid);
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -183,6 +200,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await signOut(auth);
+    setUserData(null);
     setWalletBalance(0);
     setBets([]);
     setTransactions([]);
@@ -365,6 +383,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
+    userData,
     isLoggedIn,
     isLoading,
     walletBalance,

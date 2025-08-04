@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CircleDollarSign, Loader2, Mail } from "lucide-react";
+import { CircleDollarSign, Loader2, Mail, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,12 +136,13 @@ function SignupForm() {
     const { signup } = useAppContext();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        await signup(email, password);
+        await signup(email, password, referralCode);
         setIsLoading(false);
     };
 
@@ -154,6 +155,10 @@ function SignupForm() {
             <div className="space-y-2">
                 <Label htmlFor="password-signup">Password</Label>
                 <Input id="password-signup" type="password" placeholder="Must be at least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+                <Input id="referral-code" type="text" placeholder="Enter friend's code" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
@@ -176,7 +181,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-sm shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-            <CircleDollarSign className="h-10 w-10 text-primary-foreground" />
+            <UserPlus className="h-10 w-10 text-primary-foreground" />
           </div>
           <CardTitle className="font-headline text-3xl">ColorCash</CardTitle>
           <CardDescription>Login or create an account to play</CardDescription>

@@ -45,3 +45,13 @@ export type LiveBet = {
   outcome: 'pending' | 'win' | 'loss';
   timestamp: string | FieldValue;
 }
+
+// User data, including referral information
+export type UserData = {
+    uid: string;
+    walletBalance: number;
+    referralCode: string;
+    referredBy: string | null;
+    successfulReferrals: number;
+    referralEarnings: number;
+}

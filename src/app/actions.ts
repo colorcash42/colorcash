@@ -1,9 +1,9 @@
 'use server';
 
-import type { Bet, Transaction, LiveGameRound, LiveBet } from "@/lib/types";
+import type { Bet, Transaction, LiveGameRound, LiveBet, UserData } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit, collectionGroup } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit, collectionGroup, increment } from "firebase/firestore";
 import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 import { getAuth } from "firebase-admin/auth";
 import { app } from "@/lib/firebase-admin"; // Import admin app
@@ -11,7 +11,7 @@ import { app } from "@/lib/firebase-admin"; // Import admin app
 // --- HELPER FUNCTIONS ---
 
 // Converts Firestore Timestamps to ISO strings for serialization
-const serializeObject = (obj: any) => {
+const serializeObject = (obj: any): any => {
     if (!obj) return obj;
     if (obj instanceof Timestamp) {
         return obj.toDate().toISOString();
@@ -33,24 +33,90 @@ const serializeObject = (obj: any) => {
 
 
 // Helper function to ensure user document exists
-async function ensureUserDocument(userId: string) {
+export async function ensureUserDocument(userId: string, referralCode?: string): Promise<{ success: boolean; message: string; bonusAwarded: number }> {
     if (!userId) throw new Error("User not authenticated");
+    
     const userDocRef = doc(db, "users", userId);
     const userDoc = await getDoc(userDocRef);
-    if (!userDoc.exists()) {
-        await writeBatch(db)
-            .set(userDocRef, { walletBalance: 50, uid: userId })
-            .commit();
+
+    if (userDoc.exists()) {
+        return { success: true, message: "User document already exists.", bonusAwarded: 0 };
     }
-    return userDocRef;
+
+    // --- Process Referral ---
+    let referredByUser: { id: string, ref: any } | null = null;
+    let signupBonus = 50; // Default bonus
+    const referralReward = 25;
+
+    if (referralCode) {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("referralCode", "==", referralCode), limit(1));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const referrerDoc = querySnapshot.docs[0];
+            referredByUser = { id: referrerDoc.id, ref: referrerDoc.ref };
+            signupBonus = 75; // Increased bonus for using a referral code
+        }
+    }
+
+    // --- Create User and Award Bonuses in a Batch ---
+    const batch = writeBatch(db);
+
+    const newUser: UserData = {
+        uid: userId,
+        walletBalance: signupBonus,
+        referralCode: `ref-${userId.substring(0, 6)}`,
+        referredBy: referredByUser ? referredByUser.id : null,
+        successfulReferrals: 0,
+        referralEarnings: 0,
+    };
+    batch.set(userDocRef, newUser);
+
+    let finalMessage = `Account created successfully with a signup bonus of ₹${signupBonus}.`;
+
+    if (referredByUser) {
+        batch.update(referredByUser.ref, {
+            walletBalance: increment(referralReward),
+            successfulReferrals: increment(1),
+            referralEarnings: increment(referralReward)
+        });
+        finalMessage += ` Your referrer was awarded ₹${referralReward}.`;
+    }
+    
+    await batch.commit();
+
+    return { success: true, message: finalMessage, bonusAwarded: signupBonus };
 }
 
 
 // --- DATA ACCESS FUNCTIONS ---
 
+export async function getUserData(userId: string): Promise<{ userData: UserData | null }> {
+    if (!userId) return { userData: null };
+    const userDocRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userDocRef);
+    if (!userDoc.exists()) {
+        // This will trigger user creation with default values
+        await ensureUserDocument(userId);
+        const newUserDoc = await getDoc(userDocRef);
+        return { userData: serializeObject(newUserDoc.data() as UserData) };
+    }
+    return { userData: serializeObject(userDoc.data() as UserData) };
+}
+
+
 export async function getWalletBalance(userId: string) {
-  const userDocRef = await ensureUserDocument(userId);
+  const userDocRef = doc(db, "users", userId);
   const userDoc = await getDoc(userDocRef);
+  
+  if (!userDoc.exists()) {
+    await ensureUserDocument(userId);
+    const newUserDoc = await getDoc(userDocRef);
+    const balance = newUserDoc.data()?.walletBalance ?? 0;
+    return { balance };
+  }
+  
   const balance = userDoc.data()?.walletBalance ?? 0;
   return { balance };
 }

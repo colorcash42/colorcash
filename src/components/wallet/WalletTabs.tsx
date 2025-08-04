@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy, Download } from 'lucide-react';
+import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy, Download, Gift, Users, Share2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '../ui/button';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -199,12 +200,98 @@ function TransactionHistory() {
     );
 }
 
+function ReferAndEarn() {
+    const { userData } = useAppContext();
+    const { toast } = useToast();
+
+    if (!userData) {
+        return <Loader2 className="animate-spin" />;
+    }
+
+    const handleCopyCode = () => {
+        navigator.clipboard.writeText(userData.referralCode);
+        toast({ title: "Referral code copied!" });
+    };
+
+    const handleShare = () => {
+        const shareText = `Join me on ColorCash and get a ₹75 bonus! Use my referral code: ${userData.referralCode}`;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Join ColorCash',
+                text: shareText,
+                url: window.location.origin,
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(shareText);
+            toast({ title: "Copied to clipboard!", description: "Share text copied. You can now paste it." });
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className='font-headline'>Refer &amp; Earn</CardTitle>
+                <CardDescription>
+                    Invite your friends and earn rewards when they sign up.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Alert>
+                        <Users className="h-4 w-4" />
+                        <AlertTitle>Successful Referrals</AlertTitle>
+                        <AlertDescription className="text-2xl font-bold">
+                            {userData.successfulReferrals || 0}
+                        </AlertDescription>
+                    </Alert>
+                    <Alert>
+                        <Gift className="h-4 w-4" />
+                        <AlertTitle>Total Referral Earnings</AlertTitle>
+                        <AlertDescription className="text-2xl font-bold">
+                            ₹{(userData.referralEarnings || 0).toFixed(2)}
+                        </AlertDescription>
+                    </Alert>
+                </div>
+
+                <div className="text-center p-4 border-2 border-dashed rounded-lg space-y-2">
+                    <Label htmlFor="referral-code" className="text-sm text-muted-foreground">Your Referral Code</Label>
+                    <div className="flex items-center justify-center gap-2">
+                        <Input 
+                            id="referral-code"
+                            readOnly 
+                            value={userData.referralCode}
+                            className="text-center text-lg font-bold bg-secondary/50 h-12"
+                        />
+                         <Button variant="ghost" size="icon" onClick={handleCopyCode}>
+                            <Copy className="h-5 w-5"/>
+                        </Button>
+                    </div>
+                </div>
+
+                <Button onClick={handleShare} className="w-full">
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share Your Code
+                </Button>
+
+                 <Alert variant="default" className="bg-primary/10 border-primary/20">
+                    <Gift className="h-4 w-4" />
+                    <AlertTitle className="font-semibold">How it Works</AlertTitle>
+                    <AlertDescription>
+                        When your friend signs up with your code, they get a <span className="font-bold">₹75 bonus</span> and you get <span className="font-bold">₹25</span> in your wallet!
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+    )
+}
+
 export function WalletTabs() {
   return (
     <Tabs defaultValue="deposit" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="deposit">Deposit</TabsTrigger>
         <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+        <TabsTrigger value="refer">Refer &amp; Earn</TabsTrigger>
         <TabsTrigger value="history">History</TabsTrigger>
       </TabsList>
       <TabsContent value="deposit">
@@ -232,6 +319,9 @@ export function WalletTabs() {
             <WithdrawalForm />
           </CardContent>
         </Card>
+      </TabsContent>
+       <TabsContent value="refer">
+        <ReferAndEarn />
       </TabsContent>
       <TabsContent value="history">
         <TransactionHistory />
