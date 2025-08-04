@@ -1,9 +1,8 @@
-
 "use client";
 
 import { PageClientAuth } from "@/components/common/PageClientAuth";
 import { Header } from "@/components/common/Header";
-import { SpinAndWinGame } from "@/components/live/SpinAndWinGame";
+import { FourColorGame } from "@/components/live/FourColorGame";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Gamepad2 } from "lucide-react";
 
@@ -17,11 +16,11 @@ export default function LiveGamePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Gamepad2 />
-                        Spin & Win (Live)
+                        Live 4-Color Game
                     </CardTitle>
-                    <CardDescription>Place your bet before the timer runs out. A new round starts every 2 minutes.</CardDescription>
+                    <CardDescription>Place your bet before the timer runs out. An admin controls the round.</CardDescription>
                 </CardHeader>
-                <SpinAndWinGame />
+                <FourColorGame />
             </Card>
         </main>
       </div>

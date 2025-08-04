@@ -2,7 +2,7 @@ import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Bet = {
   id: string;
-  gameId: 'colorcash' | 'oddeven' | 'spin-and-win'; // identify the game
+  gameId: 'colorcash' | 'oddeven' | 'live-four-color';
   betType: "color" | "number" | "size" | "trio" | "oddOrEven" | "live";
   betValue: string | number;
   amount: number;
@@ -23,22 +23,35 @@ export type Transaction = {
   userTransactionId?: string; // ID of the transaction doc in the user's subcollection
 };
 
-// Types for the new Live "Spin & Win" Game
+
+// Types for the new Live 4-Color Game
 export type LiveGameRound = {
   id: string; // e.g., "round-202407281200"
-  status: 'betting' | 'spinning' | 'finished';
+  status: 'betting' | 'awarding'; // betting: users can bet, awarding: betting closed, admin selects winner
   startTime: string | Timestamp;
-  spinTime: string | Timestamp; // When the betting phase ends and wheel starts spinning
-  endTime: string | Timestamp; // When the round is completely over and results are shown
-  winningMultiplier: number | null; // e.g., 2, 3, 5, or 0 for BUST
+  endTime: string | Timestamp; // When the 10-min betting window closes
+  winningColor: 'Red' | 'Yellow' | 'Black' | 'Blue' | null;
   resultTimestamp: string | Timestamp | null;
+  betCounts: {
+    Red: number;
+    Yellow: number;
+    Black: number;
+    Blue: number;
+  };
+   betAmounts: {
+    Red: number;
+    Yellow: number;
+    Black: number;
+    Blue: number;
+  };
 }
 
 export type LiveBet = {
   id?: string; // Optional because we create it on the client first
   userId: string;
   roundId: string;
-  gameId: 'spin-and-win';
+  gameId: 'live-four-color';
+  betOnColor: 'Red' | 'Yellow' | 'Black' | 'Blue';
   amount: number;
   payout: number | null;
   status: 'pending' | 'won' | 'lost';

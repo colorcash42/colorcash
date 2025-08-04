@@ -8,9 +8,7 @@ import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 import { getAuth } from "firebase-admin/auth";
 import { app } from "@/lib/firebase-admin"; // Import admin app
 
-// --- HELPER FUNCTIONS ---
-
-// Converts Firestore Timestamps to ISO strings for serialization
+// Helper is now internal to this file and not exported.
 const serializeObject = (obj: any): any => {
     if (!obj) return obj;
     if (obj instanceof Timestamp) {
@@ -141,9 +139,9 @@ export async function getBets(userId:string): Promise<{ bets: Bet[] }> {
     const data = doc.data();
     return serializeObject({
       id: doc.id,
-      gameId: data.gameId || 'spin-and-win',
+      gameId: data.gameId || 'live-four-color',
       betType: 'live', // Use a specific type for live games
-      betValue: `Round: ${data.roundId.slice(-6)}`, // Display round ID for context
+      betValue: data.betOnColor ? `Bet on ${data.betOnColor}` : `Round: ${data.roundId.slice(-6)}`,
       amount: data.amount,
       outcome: data.outcome || (data.status === 'won' ? 'win' : data.status === 'lost' ? 'loss' : 'pending'),
       payout: data.payout ?? 0,
@@ -508,59 +506,59 @@ export async function getLiveGameData(): Promise<{ currentRound: LiveGameRound |
         return { currentRound: null };
     }
 
-    const currentRound = serializeObject(docSnap.data()) as LiveGameRound;
-    return { currentRound };
+    return { currentRound: serializeObject(docSnap.data()) as LiveGameRound };
 }
 
 
-export async function placeLiveBetAction(userId: string, amount: number, roundId: string): Promise<{ success: boolean; message: string; }> {
+export async function placeFourColorBetAction(userId: string, amount: number, betOnColor: 'Red' | 'Yellow' | 'Black' | 'Blue'): Promise<{ success: boolean; message: string; }> {
     if (!userId) return { success: false, message: "User not authenticated." };
-    if (!roundId) return { success: false, message: "No active game round." };
-
+    
     const userDocRef = doc(db, "users", userId);
     const roundStatusDocRef = doc(db, "liveGameStatus", "current");
-    
-    // Bets are stored in a root 'bets' collection for easy querying by the function
     const betDocRef = doc(collection(db, "bets")); 
 
     try {
-        await runTransaction(db, async (transaction) => {
+        const roundId = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
             const roundDoc = await transaction.get(roundStatusDocRef);
 
             if (!userDoc.exists()) throw new Error("User not found.");
-            if (!roundDoc.exists()) throw new Error("Game round not found.");
+            if (!roundDoc.exists()) throw new Error("No active game round.");
             
-            const roundData = roundDoc.data();
-            // Critical check: Make sure the round ID matches and betting is open
-            if (roundData.id !== roundId || roundData.status !== 'betting') {
+            const roundData = roundDoc.data() as LiveGameRound;
+            if (roundData.status !== 'betting') {
                 throw new Error("Betting for this round is closed.");
             }
 
             const currentBalance = userDoc.data().walletBalance;
             if (amount > currentBalance) throw new Error("Insufficient balance.");
 
-            const newBalance = currentBalance - amount;
+            // Deduct amount immediately & update bet stats
+            transaction.update(userDocRef, { walletBalance: increment(-amount) });
+            transaction.update(roundStatusDocRef, {
+                [`betCounts.${betOnColor}`]: increment(1),
+                [`betAmounts.${betOnColor}`]: increment(amount),
+            })
 
-            const newBet: Omit<LiveBet, 'id'> = {
+            // Record the bet in a single, queryable collection
+             const newBet: Omit<LiveBet, 'id'> = {
                 userId,
-                roundId,
-                gameId: 'spin-and-win',
+                roundId: roundData.id,
+                gameId: 'live-four-color',
+                betOnColor,
                 amount,
-                payout: null, // Payout is calculated by the cloud function
+                payout: null,
                 status: 'pending',
                 outcome: 'pending',
-                timestamp: serverTimestamp() as any, // Let server set timestamp
+                timestamp: serverTimestamp() as any,
             };
-
-            // Deduct amount immediately
-            transaction.update(userDocRef, { walletBalance: newBalance });
-            // Record the bet in a single, queryable collection
             transaction.set(betDocRef, newBet);
+
+            return roundData.id;
         });
         
-        revalidatePath('/live'); // To update wallet balance display
-        revalidatePath('/dashboard'); // To update bet history
+        revalidatePath('/live');
+        revalidatePath('/dashboard');
         return { success: true, message: "Bet placed successfully!" };
     } catch (e: any) {
         console.error("placeLiveBetAction failed: ", e);
@@ -568,21 +566,89 @@ export async function placeLiveBetAction(userId: string, amount: number, roundId
     }
 }
 
-// Since re-authentication is sensitive and requires the current password,
-// it's safer to handle this on the server where the environment is more secure.
-// However, the standard web SDKs for Firebase Auth are designed for client-side use
-// and re-authentication is a client-side flow. The Admin SDK (server-side)
-// doesn't have a direct "re-authenticate" method.
-// The proper flow is:
-// 1. Client: Get new password from user.
-// 2. Client: Use `reauthenticateWithCredential` with the *current* password.
-// 3. Client: If successful, use `updatePassword`.
-// This means we CANNOT use a standard Server Action that takes the password.
-// So, we'll create an action that just updates the password with the Admin SDK,
-// but the re-authentication step MUST be handled on the client before calling this.
-// For simplicity in this project, we'll create a server action that does not re-authenticate,
-// which is LESS SECURE but works within the existing architecture.
-// A more secure implementation would require a client-side call to re-authenticate first.
+
+// --- ADMIN ACTIONS FOR LIVE GAME ---
+export async function startFourColorRoundAction(): Promise<{ success: boolean; message: string }> {
+    const liveStatusRef = doc(db, "liveGameStatus", "current");
+    const now = Timestamp.now();
+
+    const newRound: LiveGameRound = {
+        id: `4-color-round-${now.toMillis()}`,
+        status: 'betting',
+        startTime: now,
+        endTime: Timestamp.fromMillis(now.toMillis() + 10 * 60 * 1000), // 10 minutes
+        winningColor: null,
+        resultTimestamp: null,
+        betCounts: { Red: 0, Yellow: 0, Black: 0, Blue: 0 },
+        betAmounts: { Red: 0, Yellow: 0, Black: 0, Blue: 0 },
+    };
+
+    try {
+        await setDoc(liveStatusRef, newRound);
+        revalidatePath('/live');
+        revalidatePath('/admin');
+        return { success: true, message: "New 10-minute round started." };
+    } catch (error: any) {
+        console.error("startFourColorRoundAction failed:", error);
+        return { success: false, message: error.message || "Failed to start round." };
+    }
+}
+
+
+export async function endFourColorRoundAction(winningColor: 'Red' | 'Yellow' | 'Black' | 'Blue'): Promise<{ success: boolean; message: string }> {
+    const liveStatusRef = doc(db, "liveGameStatus", "current");
+    const batch = writeBatch(db);
+
+    try {
+        const roundDoc = await getDoc(liveStatusRef);
+        if (!roundDoc.exists()) throw new Error("No active round to end.");
+        
+        const round = roundDoc.data() as LiveGameRound;
+        if (round.status !== 'betting') throw new Error("Round is not in a betting state.");
+
+        // Update round status to 'awarding'
+        batch.update(liveStatusRef, {
+            status: "awarding",
+            winningColor: winningColor,
+            resultTimestamp: serverTimestamp(),
+        });
+        
+        // Payout logic
+        const betsSnapshot = await getDocs(
+            query(collection(db, "bets"), where("roundId", "==", round.id))
+        );
+
+        if (betsSnapshot.empty) {
+            console.log("No bets placed in this round.");
+        } else {
+            const PAYOUT_MULTIPLIER = 3.5; // Example: Win 3.5x the bet amount
+            betsSnapshot.docs.forEach((betDoc) => {
+                const bet = betDoc.data() as LiveBet;
+                if (bet.betOnColor === winningColor) {
+                    const payout = bet.amount * PAYOUT_MULTIPLIER;
+                    batch.update(betDoc.ref, { status: "won", outcome: "win", payout: payout });
+                    
+                    const userRef = doc(db, "users", bet.userId);
+                    batch.update(userRef, { walletBalance: increment(payout) });
+                } else {
+                    batch.update(betDoc.ref, { status: "lost", outcome: "loss", payout: 0 });
+                }
+            });
+        }
+        
+        await batch.commit();
+
+        revalidatePath('/live');
+        revalidatePath('/admin');
+        revalidatePath('/dashboard');
+        return { success: true, message: `Round ended. ${winningColor} is the winner! Payouts processed.` };
+    } catch (error: any) {
+        console.error("endFourColorRoundAction failed:", error);
+        return { success: false, message: error.message || "Failed to end round." };
+    }
+}
+
+
 export async function changePasswordAction(uid: string, newPassword: string): Promise<{success: boolean, message: string}> {
     try {
         await getAuth(app).updateUser(uid, {

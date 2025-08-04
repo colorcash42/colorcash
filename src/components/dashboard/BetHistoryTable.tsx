@@ -30,16 +30,25 @@ const getGameDisplay = (bet: Bet) => {
             return <><Palette className="h-4 w-4" /> ColorCash</>;
         case 'oddeven':
             return <><Dices className="h-4 w-4" /> Odd/Even</>;
-        case 'spin-and-win':
-            return <><Gamepad2 className="h-4 w-4" /> Spin & Win</>;
+        case 'live-four-color':
+            return <><Gamepad2 className="h-4 w-4" /> 4-Color Live</>;
         default:
             return <><Palette className="h-4 w-4" /> ColorCash</>;
     }
 }
 
 const getBetDisplayValue = (bet: Bet) => {
-    if (bet.gameId === 'spin-and-win') {
-        return <span className="font-medium text-muted-foreground italic">Played Round</span>;
+    if (bet.gameId === 'live-four-color') {
+        const color = bet.betValue.toString().replace('Bet on ', '');
+        let colorClass = '';
+        if (color === 'Red') colorClass = 'bg-red-500';
+        if (color === 'Yellow') colorClass = 'bg-yellow-400';
+        if (color === 'Black') colorClass = 'bg-black';
+        if (color === 'Blue') colorClass = 'bg-blue-500';
+         return <div className="flex items-center gap-2 font-medium">
+            <div className={cn("h-4 w-4 rounded-full", colorClass)} />
+            {color}
+        </div>
     }
 
     switch (bet.betType) {

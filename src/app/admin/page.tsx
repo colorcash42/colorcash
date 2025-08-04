@@ -8,6 +8,8 @@ import { RequestsTable } from "@/components/admin/RequestsTable";
 import { useAppContext } from "@/context/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+import { LiveGameAdmin } from "@/components/admin/LiveGameAdmin";
+import { Separator } from "@/components/ui/separator";
 
 export default function AdminPage() {
   const { isUserAdmin, viewAsAdmin } = useAppContext();
@@ -53,11 +55,16 @@ export default function AdminPage() {
       <div className="flex min-h-screen w-full flex-col">
         <Header />
         <main className="flex-1 p-4 md:p-8">
-            <div className="container mx-auto">
-                <div className="mb-8">
+            <div className="container mx-auto space-y-8">
+                <div>
                     <h1 className="font-headline text-3xl md:text-4xl font-bold">Admin Panel</h1>
-                    <p className="text-muted-foreground">Review and approve user transactions.</p>
+                    <p className="text-muted-foreground">Manage live games and user transactions.</p>
                 </div>
+
+                <LiveGameAdmin />
+
+                <Separator />
+
                 <RequestsTable />
             </div>
         </main>

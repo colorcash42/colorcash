@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from "react";
@@ -23,14 +22,18 @@ import {
   getGuruSuggestionAction,
   changePasswordAction,
   ensureUserDocument,
-  placeLiveBetAction,
   getLiveGameData,
+  placeFourColorBetAction,
+  startFourColorRoundAction,
+  endFourColorRoundAction,
 } from "@/app/actions";
 import { doc, onSnapshot, Timestamp } from "firebase/firestore";
 
 type Theme = "light" | "dark" | "dark-pro";
 type ColorCashBetType = 'color' | 'number' | 'size' | 'trio';
 type OddEvenBetType = 'Odd' | 'Even';
+type FourColorBetType = 'Red' | 'Yellow' | 'Black' | 'Blue';
+
 
 // This helper function is now local to this file.
 const serializeObject = (obj: any): any => {
@@ -75,7 +78,7 @@ interface AppContextType {
   logout: () => void;
   placeBet: (amount: number, betType: ColorCashBetType, betValue: string | number) => Promise<any>;
   placeOddEvenBet: (amount: number, betValue: OddEvenBetType) => Promise<any>;
-  placeLiveBet: (amount: number, roundId: string) => Promise<any>;
+  placeFourColorBet: (amount: number, betOnColor: FourColorBetType) => Promise<any>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
   handleTransaction: (transactionId: string, newStatus: "approved" | "rejected") => Promise<void>;
@@ -83,6 +86,8 @@ interface AppContextType {
   changePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string; }>;
   sendPasswordReset: (email: string) => Promise<boolean>;
   fetchData: () => Promise<void>; 
+  startFourColorRound: () => Promise<void>;
+  endFourColorRound: (winningColor: FourColorBetType) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -103,61 +108,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   const isUserAdmin = user ? ADMIN_UIDS.includes(user.uid) : false;
-
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("theme") as Theme | null;
-    if (storedTheme) {
-      setThemeState(storedTheme);
-    }
-     const storedSound = localStorage.getItem("soundEnabled");
-    if (storedSound) {
-      setSoundEnabledState(JSON.parse(storedSound));
-    }
-    
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        fetchData(currentUser.uid); // Pass UID directly
-      }
-      setIsLoading(false);
-
-      if (currentUser && window.location.pathname === '/') {
-        router.push("/dashboard");
-      } else if (!currentUser) {
-        router.push("/");
-      }
-    });
-    
-    // Set up a real-time listener for the live game status
-    const liveStatusRef = doc(db, "liveGameStatus", "current");
-    const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
-        if (doc.exists()) {
-            const roundData = serializeObject(doc.data()) as LiveGameRound;
-            setLiveGameRound(roundData);
-        } else {
-            setLiveGameRound(null);
-        }
-    });
-
-
-    return () => {
-        unsubscribeAuth();
-        unsubscribeLiveGame();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
-
-  const setTheme = (theme: Theme) => {
-    setThemeState(theme);
-    localStorage.setItem("theme", theme);
-  };
-  
-  const setSoundEnabled = (enabled: boolean) => {
-    setSoundEnabledState(enabled);
-    localStorage.setItem("soundEnabled", JSON.stringify(enabled));
-  }
-
-  const isLoggedIn = user !== null;
 
   const fetchData = useCallback(async (uid?: string) => {
     const currentUid = uid || user?.uid;
@@ -190,6 +140,58 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user?.uid]);
 
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme") as Theme | null;
+    if (storedTheme) {
+      setThemeState(storedTheme);
+    }
+     const storedSound = localStorage.getItem("soundEnabled");
+    if (storedSound) {
+      setSoundEnabledState(JSON.parse(storedSound));
+    }
+    
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+      if (currentUser) {
+        fetchData(currentUser.uid);
+      }
+    });
+    
+    // Set up a real-time listener for the live game status
+    const liveStatusRef = doc(db, "liveGameStatus", "current");
+    const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
+        if (doc.exists()) {
+            const roundData = serializeObject(doc.data()) as LiveGameRound;
+            setLiveGameRound(roundData);
+        } else {
+            setLiveGameRound(null);
+        }
+    }, (error) => {
+        console.error("Live game listener failed:", error);
+        setLiveGameRound(null);
+    });
+
+
+    return () => {
+        unsubscribeAuth();
+        unsubscribeLiveGame();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setTheme = (theme: Theme) => {
+    setThemeState(theme);
+    localStorage.setItem("theme", theme);
+  };
+  
+  const setSoundEnabled = (enabled: boolean) => {
+    setSoundEnabledState(enabled);
+    localStorage.setItem("soundEnabled", JSON.stringify(enabled));
+  }
+
+  const isLoggedIn = user !== null;
+
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -198,37 +200,42 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoggedIn, fetchData]);
 
   const login = async (email: string, pass: string) => {
+    setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
+      // Data fetching is handled by onAuthStateChanged
+      router.push("/dashboard");
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-      // onAuthStateChanged will handle the redirect and data fetching
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Login Failed",
         description: error.message,
       });
+    } finally {
+        setIsLoading(false);
     }
   };
 
    const signup = async (email: string, pass: string, referralCode?: string) => {
+    setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const newUser = userCredential.user;
       
-      // Now create the user document with referral logic
       const docResult = await ensureUserDocument(newUser.uid, referralCode);
 
-      toast({
+      // Manually fetch data right after signup to ensure context is updated before redirect
+      await fetchData(newUser.uid);
+
+      router.push("/dashboard");
+       toast({
         title: "Account Created!",
         description: docResult.message,
       });
-
-      // Manually fetch data right after signup to ensure context is updated
-      await fetchData(newUser.uid);
 
     } catch (error: any) {
       toast({
@@ -236,6 +243,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         title: "Signup Failed",
         description: error.message,
       });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -247,11 +256,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setBets([]);
     setTransactions([]);
     setPendingTransactions([]);
+    router.push("/");
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    // onAuthStateChanged will handle the redirect
   };
 
   const placeBet = async (amount: number, betType: ColorCashBetType, betValue: string | number) => {
@@ -294,23 +303,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return result;
   };
   
-    const placeLiveBet = async (amount: number, roundId: string) => {
+  const placeFourColorBet = async (amount: number, betOnColor: FourColorBetType) => {
     if (!user) {
       const failResult = { success: false, message: "User not logged in" };
       toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
       return failResult;
     };
-    const result = await placeLiveBetAction(user.uid, amount, roundId);
+    const result = await placeFourColorBetAction(user.uid, amount, betOnColor);
     
-    if (!result.success) {
-      toast({
-        variant: "destructive",
-        title: "Bet Failed",
-        description: result.message,
-      });
+    if (result.success) {
+       toast({ title: "Bet Placed!", description: result.message });
+    } else {
+       toast({ variant: "destructive", title: "Bet Failed", description: result.message });
     }
 
-    await fetchData();
+    await fetchData(); // Fetch data to update wallet balance
     return result;
   };
 
@@ -394,11 +401,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Re-authenticate user with their current password. This is a security measure.
       const credential = EmailAuthProvider.credential(user.email, currentPass);
       await reauthenticateWithCredential(user, credential);
       
-      // If re-authentication is successful, update the password.
       await updatePassword(user, newPass);
       
       const result = { success: true, message: "Password updated successfully!" };
@@ -407,7 +412,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error: any) {
       let errorMessage = "An unknown error occurred.";
-      // Provide more specific error messages
       if (error.code === 'auth/wrong-password') {
         errorMessage = 'The current password you entered is incorrect.';
       } else if (error.code === 'auth/weak-password') {
@@ -442,6 +446,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Admin actions for the new game
+  const startFourColorRound = async () => {
+      if (!isUserAdmin) return;
+      const result = await startFourColorRoundAction();
+      if (result.success) {
+          toast({ title: "Success", description: result.message });
+      } else {
+          toast({ variant: "destructive", title: "Error", description: result.message });
+      }
+  };
+
+  const endFourColorRound = async (winningColor: FourColorBetType) => {
+      if (!isUserAdmin) return;
+      const result = await endFourColorRoundAction(winningColor);
+      if (result.success) {
+          toast({ title: "Round Ended", description: result.message });
+      } else {
+          toast({ variant: "destructive", title: "Error", description: result.message });
+      }
+  };
+
 
   const value = {
     user,
@@ -458,7 +483,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     logout,
     placeBet,
     placeOddEvenBet,
-    placeLiveBet,
+    placeFourColorBet,
     requestDeposit,
     requestWithdrawal,
     handleTransaction,
@@ -473,6 +498,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setViewAsAdmin,
     soundEnabled,
     setSoundEnabled,
+    startFourColorRound,
+    endFourColorRound,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
