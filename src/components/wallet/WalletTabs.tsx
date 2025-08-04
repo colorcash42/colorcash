@@ -221,17 +221,21 @@ function ReferAndEarn() {
             url: window.location.origin,
         };
 
+        // The Web Share API is more complex than just checking for navigator.share.
+        // It requires a secure context (HTTPS) and a user gesture.
+        // In some development environments, it might not work.
+        // We will try to use it, and if it fails, we fall back to copying to the clipboard.
         if (navigator.share) {
             try {
                 await navigator.share(shareData);
             } catch (err) {
-                // If sharing fails (e.g., user cancels or permission is denied),
-                // fall back to copying to clipboard.
+                // This catch block handles cases where the user cancels the share dialog
+                // or if the API fails for any reason. We then fall back to copying.
                 navigator.clipboard.writeText(shareText);
-                toast({ title: "Copied to clipboard!", description: "Sharing was canceled, so we copied the text for you." });
+                toast({ title: "Copied to clipboard!", description: "You can now paste the referral message." });
             }
         } else {
-            // Fallback for browsers that don't support the Share API
+            // Fallback for browsers that don't support the Share API at all
             navigator.clipboard.writeText(shareText);
             toast({ title: "Copied to clipboard!", description: "Share text copied. You can now paste it." });
         }
