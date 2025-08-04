@@ -32,9 +32,10 @@ export const manageSpinAndWin = functions
     const previousRoundDoc = await liveStatusRef.get();
     if (previousRoundDoc.exists) {
       const previousRound = previousRoundDoc.data();
+      const roundEndTime = (previousRound?.endTime as admin.firestore.Timestamp)?.toMillis();
 
-      // Only process if the round was in the 'betting' state and has expired.
-      if (previousRound && previousRound.status === "betting") {
+      // Only process if the round was in 'betting' state and has expired.
+      if (previousRound && previousRound.status === "betting" && roundEndTime < now.toMillis()) {
         const roundId = previousRound.id;
         console.log(`Processing results for round ${roundId}...`);
 
@@ -47,8 +48,9 @@ export const manageSpinAndWin = functions
           resultTimestamp: now,
         });
 
+        // Use a collection group query to get all bets for the round
         const betsSnapshot = await db
-          .collection("bets")
+          .collectionGroup("bets")
           .where("roundId", "==", roundId)
           .get();
 
@@ -72,6 +74,7 @@ export const manageSpinAndWin = functions
             }
           });
 
+          // Update user wallet balances in a separate loop
           for (const [userId, totalPayout] of userPayouts.entries()) {
              const userRef = db.collection("users").doc(userId);
              batch.update(userRef, {
@@ -100,6 +103,7 @@ export const manageSpinAndWin = functions
       resultTimestamp: null,
     };
 
+    // Set the new round data in the 'current' document
     batch.set(liveStatusRef, newRound);
     
     await batch.commit();
@@ -115,3 +119,5 @@ export const helloWorld = functions.https.onRequest((request, response) => {
   functions.logger.info("Hello logs!", { structuredData: true });
   response.send("Hello from Firebase!");
 });
+
+    
