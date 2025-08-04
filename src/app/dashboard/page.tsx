@@ -9,6 +9,7 @@ import { Dices, Palette, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { OffersSection } from "@/components/dashboard/OffersSection";
 
 const GameCard = ({ icon, title, description, href, className }) => (
     <Card className={cn("flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300", className)}>
@@ -50,6 +51,10 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground">Select a game from the options below to start playing.</p>
             </div>
             
+             <div className="mb-8">
+              <OffersSection />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
               <GameCard 
                 icon={<Palette className="h-8 w-8 text-primary" />}
