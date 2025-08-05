@@ -14,7 +14,7 @@ import { Marquee } from "@/components/common/Marquee";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 
-const GameCard = ({ icon, title, description, href, className }) => (
+const GameCard = ({ icon, title, description, href, className }: { icon: React.ReactNode, title: string, description: string, href: string, className?: string }) => (
     <Card className={cn("flex flex-col", className)}>
         <CardHeader>
             <div className="flex items-center gap-4">

@@ -6,10 +6,4 @@ import { cn } from "@/lib/utils";
 
 // This wrapper is a client component and can safely use the context.
 export function ClientWrapper({ children }: { children: React.ReactNode }) {
-  const { theme } = useAppContext();
-  return (
-    <div className={cn("antialiased font-body", theme)}>
-      {children}
-    </div>
-  )
-}
+  const { theme }

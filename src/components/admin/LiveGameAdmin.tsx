@@ -94,8 +94,8 @@ export function LiveGameAdmin() {
                                         {Object.keys(betAmounts).map((color) => (
                                             <TableRow key={color}>
                                                 <TableCell>{color}</TableCell>
-                                                <TableCell>{betCounts[color]}</TableCell>
-                                                <TableCell>₹{betAmounts[color].toFixed(2)}</TableCell>
+                                                <TableCell>{betCounts[color as keyof typeof betCounts]}</TableCell>
+                                                <TableCell>₹{betAmounts[color as keyof typeof betAmounts].toFixed(2)}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -132,11 +132,4 @@ export function LiveGameAdmin() {
                                           `End Round & Award ${selectedWinner || ''} Winners`
                                           )
                                      }
-                                  </Button>
-                             </div>
-                        </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
+                                  

@@ -199,9 +199,4 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
                       </div>
                     </div>
               </>
-            )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+            

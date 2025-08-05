@@ -53,6 +53,3 @@ export function HelpDialog({ isOpen, onOpenChange }: HelpDialogProps) {
             </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
-}

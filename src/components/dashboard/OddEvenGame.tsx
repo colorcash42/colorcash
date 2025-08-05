@@ -20,7 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useSound } from '@/hooks/use-sound';
 
-function ResultDialog({ isOpen, onOpenChange, result, betAmount }) {
+function ResultDialog({ isOpen, onOpenChange, result, betAmount }: { isOpen: boolean, onOpenChange: (isOpen: boolean) => void, result: any, betAmount: number }) {
     if (!result) return null;
 
     const { isWin, winningNumber, payout } = result;
@@ -66,7 +66,6 @@ export function OddEvenGame({ walletBalance }: { walletBalance: number }) {
   const playBetSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fbet.mp3?alt=media&token=1434c114-53c7-4df3-92f7-234f59846114');
   const playWinSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fwin.mp3?alt=media&token=1a80c655-5231-4122-8356-55447a166943');
   const playLoseSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Flose.mp3?alt=media&token=e62925f4-3d0b-402a-9e12-07751910e53a');
-  const buttonAnimation = "transition-transform duration-200 hover:scale-105";
 
   const handleBet = async () => {
     const betAmount = parseFloat(amount);
@@ -91,7 +90,7 @@ export function OddEvenGame({ walletBalance }: { walletBalance: number }) {
     playBetSound();
     const response = await placeOddEvenBet(betAmount, betValue);
     
-    if (response.success) {
+    if (response.success && response.result) {
       setLastResult(response.result);
       setLastBetAmount(betAmount);
       setIsResultOpen(true);
@@ -145,7 +144,4 @@ export function OddEvenGame({ walletBalance }: { walletBalance: number }) {
         </Button>
     </CardContent>
 
-    <ResultDialog isOpen={isResultOpen} onOpenChange={setIsResultOpen} result={lastResult} betAmount={lastBetAmount} />
-    </>
-  );
-}
+    <ResultDialog isOpen={isResultOpen} on

@@ -1,3 +1,4 @@
+
 // This is a list of user UIDs that have admin privileges.
 // Replace the placeholder with your actual Firebase User ID (UID).
 // You can find your UID in the Firebase console under Authentication > Users.

@@ -148,8 +148,4 @@ export function Header() {
           </div>
         </div>
       </header>
-       <SettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-       <HelpDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
-    </>
-  );
-}
+       <SettingsDialog isOpen={isSettingsOpen} on

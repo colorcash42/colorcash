@@ -30,7 +30,7 @@ function formatTime(seconds: number) {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
-function GameTimer({ round }) {
+function GameTimer({ round }: { round: any }) {
     const [remaining, setRemaining] = useState(0);
 
     useEffect(() => {
@@ -204,7 +204,4 @@ export function FourColorGame() {
 
   return (
     <>
-        {renderGameContent()}
-    </>
-  );
-}
+        {renderGame

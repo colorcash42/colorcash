@@ -96,10 +96,4 @@ export function RequestsTable() {
                   </TableCell>
                 </TableRow>
               ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
+            

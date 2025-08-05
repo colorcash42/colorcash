@@ -1,3 +1,4 @@
+
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Bet = {

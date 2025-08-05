@@ -205,8 +205,10 @@ function ReferAndEarn() {
     }
 
     const handleCopyCode = () => {
-        navigator.clipboard.writeText(userData.referralCode);
-        toast({ title: "Referral code copied!" });
+        if (userData.referralCode) {
+            navigator.clipboard.writeText(userData.referralCode);
+            toast({ title: "Referral code copied!" });
+        }
     };
 
     const handleShare = async () => {
@@ -252,7 +254,7 @@ function ReferAndEarn() {
                 <CardContent className="pt-6 space-y-4">
                     <Label htmlFor="referral-code">Your Referral Code</Label>
                     <div className="flex gap-2">
-                        <Input id="referral-code" value={userData.referralCode} readOnly />
+                        <Input id="referral-code" value={userData.referralCode || ''} readOnly />
                         <Button onClick={handleCopyCode} variant="outline" size="icon"><Copy /></Button>
                     </div>
 
@@ -277,8 +279,8 @@ export function WalletTabs() {
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="deposit"><ArrowDownCircle/> Deposit</TabsTrigger>
         <TabsTrigger value="withdraw"><ArrowUpCircle/> Withdraw</TabsTrigger>
-        <TabsTrigger value="history"><Users/> Referrals</TabsTrigger>
-        <TabsTrigger value="referrals"><Gift/> History</TabsTrigger>
+        <TabsTrigger value="referrals"><Users/> Referrals</TabsTrigger>
+        <TabsTrigger value="history"><Gift/> History</TabsTrigger>
       </TabsList>
       <TabsContent value="deposit">
         <Card>
@@ -306,12 +308,9 @@ export function WalletTabs() {
           </CardContent>
         </Card>
       </TabsContent>
-       <TabsContent value="history">
+       <TabsContent value="referrals">
           <ReferAndEarn />
       </TabsContent>
-      <TabsContent value="referrals">
+      <TabsContent value="history">
           <TransactionHistory />
-      </TabsContent>
-    </Tabs>
-  );
-}
+      </

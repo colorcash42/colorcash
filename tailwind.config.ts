@@ -90,9 +90,4 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'marquee': 'marquee 60s linear infinite',
-        'marquee2': 'marquee2 60s linear infinite',
-      },
-    },
-  },
-  plugins: [require('tailwindcss-animate')],
-} satisfies Config;
+        'marquee

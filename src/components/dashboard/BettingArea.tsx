@@ -29,12 +29,12 @@ import { useSound } from '@/hooks/use-sound';
 type BetType = 'color' | 'number' | 'size' | 'trio';
 type BetValue = string | number;
 
-function ResultDialog({ isOpen, onOpenChange, result, betAmount }) {
+function ResultDialog({ isOpen, onOpenChange, result, betAmount }: { isOpen: boolean, onOpenChange: (isOpen: boolean) => void, result: any, betAmount: number }) {
     if (!result) return null;
 
     const { isWin, winningNumber, winningColor, winningSize, payout } = result;
     
-    const getWinningColorClasses = (color) => {
+    const getWinningColorClasses = (color: string) => {
         if (color === 'Green') return 'bg-green-500 text-white';
         if (color === 'Red') return 'bg-red-500 text-white';
         if (color === 'VioletGreen') return 'bg-gradient-to-r from-violet-500 to-green-500 text-white';
@@ -117,7 +117,7 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
     playBetSound();
     const response = await placeBet(betAmount, betType, betValue);
     
-    if (response.success) {
+    if (response.success && response.result) {
       setLastResult(response.result);
       setLastBetAmount(betAmount);
       setIsResultOpen(true);
@@ -152,16 +152,15 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
     setIsGuruLoading(false);
   }
   
-  const handleBetTypeChange = (value: BetType) => {
+  const handleBetTypeChange = (value: string) => {
     if (!value) return; // Don't allow un-selecting
-    setBetType(value);
+    const newBetType = value as BetType;
+    setBetType(newBetType);
     // Reset bet value to a default for the new type
-    if(value === 'color') setBetValue('Green');
-    if(value === 'number') setBetValue('trio1');
-    if(value === 'size') setBetValue('Small');
+    if(newBetType === 'color') setBetValue('Green');
+    if(newBetType === 'number') setBetValue('trio1');
+    if(newBetType === 'size') setBetValue('Small');
   }
-
-  const buttonAnimation = "transition-transform duration-200 hover:scale-105";
 
   return (
     <>
@@ -234,7 +233,4 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
         </Button>
     </CardContent>
 
-    <ResultDialog isOpen={isResultOpen} onOpenChange={setIsResultOpen} result={lastResult} betAmount={lastBetAmount} />
-    </>
-  );
-}
+    <Result
