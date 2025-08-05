@@ -233,4 +233,7 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
         </Button>
     </CardContent>
 
-    <Result
+    <ResultDialog isOpen={isResultOpen} onOpenChange={setIsResultOpen} result={lastResult} betAmount={lastBetAmount} />
+    </>
+  );
+}

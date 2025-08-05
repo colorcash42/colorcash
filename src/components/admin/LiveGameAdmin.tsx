@@ -133,3 +133,11 @@ export function LiveGameAdmin() {
                                           )
                                      }
                                   
+                             </Button>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}

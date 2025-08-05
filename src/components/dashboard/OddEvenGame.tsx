@@ -144,4 +144,7 @@ export function OddEvenGame({ walletBalance }: { walletBalance: number }) {
         </Button>
     </CardContent>
 
-    <ResultDialog isOpen={isResultOpen} on
+    <ResultDialog isOpen={isResultOpen} onOpenChange={setIsResultOpen} result={lastResult} betAmount={lastBetAmount} />
+    </>
+  );
+}

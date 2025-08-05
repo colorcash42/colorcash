@@ -313,4 +313,7 @@ export function WalletTabs() {
       </TabsContent>
       <TabsContent value="history">
           <TransactionHistory />
-      </
+      </TabsContent>
+    </Tabs>
+  );
+}

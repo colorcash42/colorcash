@@ -204,4 +204,7 @@ export function FourColorGame() {
 
   return (
     <>
-        {renderGame
+        {renderGameContent()}
+    </>
+  );
+}
