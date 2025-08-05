@@ -13,21 +13,23 @@ export default function ColorCashPage() {
 
   return (
     <PageClientAuth>
-      <div className="flex min-h-screen w-full flex-col">
-        <Header />
-        <main className="flex flex-1 items-center justify-center p-4 md:p-8">
-          <Card className="w-full max-w-2xl">
-             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Palette />
-                    ColorCash
-                </CardTitle>
-                <CardDescription>Bet on colors, numbers, or sizes. The result is instant.</CardDescription>
-            </CardHeader>
-            <BettingArea walletBalance={walletBalance} />
-          </Card>
-        </main>
-      </div>
+      
+        
+         
+          
+            
+                 
+                    
+                        
+                        ColorCash
+                    
+                    Bet on colors, numbers, or sizes. The result is instant.
+                
+                
+            
+          
+         
+      
     </PageClientAuth>
   );
 }

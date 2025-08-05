@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { Bet, Transaction, LiveGameRound, LiveBet, UserData } from "@/lib/types";
@@ -660,5 +661,3 @@ export async function changePasswordAction(uid: string, newPassword: string): Pr
         return { success: false, message: e.message || "An error occurred while changing the password." };
     }
 }
-
-    

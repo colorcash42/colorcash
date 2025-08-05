@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -47,10 +48,13 @@ const getBetDisplayValue = (bet: Bet) => {
         if (color === 'Yellow') colorClass = 'bg-yellow-400 text-black';
         if (color === 'Black') colorClass = 'bg-black text-white';
         if (color === 'Blue') colorClass = 'bg-blue-500 text-white';
-         return <div className="inline-flex items-center gap-2 font-medium px-2 py-1 rounded-md" style={{ backgroundColor: colorClass.split(' ')[0] }}>
-            <div className={cn("h-3 w-3 rounded-full border border-white/50", colorClass)} />
+         return 
+
+            
+                
+            
             {color}
-        </div>
+        
     }
 
     switch (bet.betType) {
@@ -59,33 +63,33 @@ const getBetDisplayValue = (bet: Bet) => {
             if (bet.betValue === 'Red') colorClass = 'bg-red-500 text-white';
             if (bet.betValue === 'Green') colorClass = 'bg-green-500 text-white';
             if (bet.betValue === 'Violet') colorClass = 'bg-violet-500 text-white';
-            return <div className={cn("inline-flex items-center gap-2 font-medium px-2 py-1 rounded-md text-white", colorClass)}>
+            return 
                 {bet.betValue}
-            </div>
+            
         case 'number':
              if (bet.betValue === 0) {
-                return <span className="font-mono font-medium bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">0 (Jackpot)</span>
+                return 0 (Jackpot)
              }
-             return <span className="font-mono font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded">{bet.betValue}</span>
+             return {bet.betValue}
         case 'trio':
             const trioMap: { [key: string]: string } = {
                 'trio1': 'Trio 1-4-7',
                 'trio2': 'Trio 2-5-8',
                 'trio3': 'Trio 3-6-9',
             };
-            return <span className="font-medium bg-blue-500/20 text-blue-700 dark:text-blue-400 px-2 py-1 rounded">{trioMap[bet.betValue as string] || bet.betValue}</span>
+            return {trioMap[bet.betValue as string] || bet.betValue}
         case 'size':
              const sizeClass = bet.betValue === 'Small' 
                 ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-400' 
                 : 'bg-orange-500/20 text-orange-700 dark:text-orange-400';
-            return <span className={cn("font-medium px-2 py-1 rounded", sizeClass)}>{bet.betValue}</span>
+            return {bet.betValue}
         case 'oddOrEven':
             const oddEvenClass = bet.betValue === 'Odd'
                 ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-400'
                 : 'bg-purple-500/20 text-purple-700 dark:text-purple-400';
-            return <span className={cn("font-medium px-2 py-1 rounded", oddEvenClass)}>{bet.betValue}</span>
+            return {bet.betValue}
         default:
-            return <span className="font-medium">{bet.betValue}</span>
+            return {bet.betValue}
     }
 }
 
@@ -114,82 +118,85 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
   };
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="font-headline">Recent Bets</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="w-full overflow-auto">
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead>Game</TableHead>
-                <TableHead>Bet On</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Bet Amount</TableHead>
-                <TableHead className="text-center">Outcome</TableHead>
-                <TableHead className="text-right">Payout</TableHead>
-                <TableHead className="text-right">Time</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {paginatedBets.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={7} className="text-center h-24">
-                            You haven't placed any bets yet.
-                        </TableCell>
-                    </TableRow>
-                ) : (
-                    paginatedBets.map((bet) => (
-                        <TableRow key={bet.id}>
-                        <TableCell>
-                             <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                                {getGameDisplay(bet)}
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            {getBetDisplayValue(bet)}
-                        </TableCell>
-                        <TableCell className="capitalize text-muted-foreground">{bet.betType}</TableCell>
-                        <TableCell className="text-right tabular-nums">₹{bet.amount.toFixed(2)}</TableCell>
-                        <TableCell className="text-center">
-                            <Badge variant={bet.outcome === 'win' ? "default" : bet.outcome === 'loss' ? "destructive" : 'secondary'}>
-                                {bet.outcome}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums font-semibold"
-                        >
-                            <span className={bet.outcome === 'win' ? 'text-primary' : bet.outcome === 'loss' ? 'text-destructive' : 'text-muted-foreground'}>
-                                {bet.outcome === 'win' ? '+' : bet.outcome === 'loss' ? '-' : ''}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
-                            </span>
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground text-xs">
-                           {bet.timestamp ? formatDistanceToNow(toDate(bet.timestamp), { addSuffix: true }) : 'Just now'}
-                        </TableCell>
-                        </TableRow>
-                    ))
-                )}
-            </TableBody>
-            </Table>
-        </div>
-      </CardContent>
+    
+      
+        
+          Recent Bets
+        
+      
+      
+        
+            
+                
+                    
+                        
+                            Game
+                            Bet On
+                            Type
+                            Bet Amount
+                            Outcome
+                            Payout
+                            Time
+                        
+                    
+                    
+                        {paginatedBets.length === 0 ? (
+                            
+                                You haven't placed any bets yet.
+                            
+                        ) : (
+                            paginatedBets.map((bet) => (
+                                
+                                
+                                    
+                                        
+                                        {getGameDisplay(bet)}
+                                    
+                                
+                                
+                                    {getBetDisplayValue(bet)}
+                                
+                                
+                                    {bet.betType}
+                                
+                                
+                                    ₹{bet.amount.toFixed(2)}
+                                
+                                
+                                    {bet.outcome}
+                                
+                                
+                                    {bet.outcome === 'win' ? '+' : bet.outcome === 'loss' ? '-' : ''}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
+                                
+                                
+                               {bet.timestamp ? formatDistanceToNow(toDate(bet.timestamp), { addSuffix: true }) : 'Just now'}
+                                
+                            
+                        ))
+                    )}
+                
+            
+        
+      
       {totalPages > 1 && (
-         <CardFooter className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
+         
+            
                 Page {currentPage} of {totalPages}
-            </span>
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                </Button>
-                 <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
-        </CardFooter>
+            
+            
+                
+                    
+                        
+                        Previous
+                    
+                     
+                        Next
+                        
+                    
+                
+            
+        
       )}
-    </Card>
+    
   );
 }

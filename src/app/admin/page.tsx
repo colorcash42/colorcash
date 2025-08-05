@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -28,47 +29,43 @@ export default function AdminPage() {
   if (!isAuthorized) {
     return (
         <PageClientAuth>
-             <div className="flex min-h-screen w-full flex-col">
-                <Header />
-                 <main className="flex-1 p-4 md:p-8">
-                    <div className="container mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="text-destructive"/>
+             
+                
+                     
+                        
+                            
+                                 
                                     Access Denied
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p>You do not have permission to view this page. Redirecting...</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
-            </div>
+                                
+                            
+                            
+                                You do not have permission to view this page. Redirecting...
+                            
+                        
+                    
+                
+            
         </PageClientAuth>
     );
   }
 
   return (
     <PageClientAuth>
-      <div className="flex min-h-screen w-full flex-col">
-        <Header />
-        <main className="flex-1 p-4 md:p-8">
-            <div className="container mx-auto space-y-8">
-                <div>
-                    <h1 className="font-headline text-3xl md:text-4xl font-bold">Admin Panel</h1>
-                    <p className="text-muted-foreground">Manage live games and user transactions.</p>
-                </div>
+      
+        
+             
+                
+                    Admin Panel
+                    Manage live games and user transactions.
+                
 
-                <LiveGameAdmin />
+                
+                
 
-                <Separator />
-
-                <RequestsTable />
-            </div>
-        </main>
-      </div>
+                
+            
+         
+      
     </PageClientAuth>
   );
 }

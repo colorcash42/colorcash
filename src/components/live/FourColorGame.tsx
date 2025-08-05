@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from "@/context/AppContext";
@@ -48,10 +49,14 @@ function GameTimer({ round }) {
     }
 
     return (
-        <div className="text-center font-mono text-2xl md:text-4xl p-4 my-4 bg-secondary rounded-lg tabular-nums">
-            <p>Time Remaining</p>
-            <p>{formatTime(remaining)}</p>
-        </div>
+         
+            
+                Time Remaining
+            
+            
+                {formatTime(remaining)}
+            
+         
     );
 }
 
@@ -59,7 +64,7 @@ function GameTimer({ round }) {
 export function FourColorGame() {
   const { walletBalance, placeFourColorBet, liveGameRound, userLiveBets } = useAppContext();
   const [amount, setAmount] = useState('10');
-  const [betOnColor, setBetOnColor] = useState<'Red' | 'Yellow' | 'Black' | 'Blue'>('Red');
+  const [betOnColor, setBetOnColor] = useState('Red');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
@@ -96,7 +101,7 @@ export function FourColorGame() {
   };
 
   const userBetsByColor = useMemo(() => {
-    const bets: Record<string, number> = { Red: 0, Yellow: 0, Black: 0, Blue: 0 };
+    const bets: Record = { Red: 0, Yellow: 0, Black: 0, Blue: 0 };
     userLiveBets.forEach((bet: LiveBet) => {
         if (bet.betOnColor) {
             bets[bet.betOnColor] += bet.amount;
@@ -108,27 +113,27 @@ export function FourColorGame() {
   const renderGameContent = () => {
     if (!liveGameRound) {
         return (
-            <Alert>
-                <Clock className="h-4 w-4" />
-                <AlertTitle>No Active Round</AlertTitle>
-                <AlertDescription>
+             
+                
+                    No Active Round
                     Please wait for an admin to start a new round.
-                </AlertDescription>
-            </Alert>
+                
+             
         );
     }
     
     if (liveGameRound.status === 'awarding' && liveGameRound.winningColor) {
          return (
-             <Alert className="bg-primary/10 border-primary/20 text-center p-6 space-y-4">
-                <PartyPopper className="h-8 w-8 mx-auto text-primary" />
-                <AlertTitle className="text-2xl font-bold">Round Over!</AlertTitle>
-                <AlertDescription className="text-lg">
-                    The winning color was <span className="font-bold">{liveGameRound.winningColor}</span>.
-                    <br />
-                    Payouts have been processed. A new round will start soon.
-                </AlertDescription>
-            </Alert>
+             
+                
+                    
+                        Round Over!
+                        The winning color was .
+                        
+                        Payouts have been processed. A new round will start soon.
+                    
+                
+             
          )
     }
 
@@ -142,67 +147,65 @@ export function FourColorGame() {
         };
         
         return (
-             <div className="animate-fade-in space-y-4">
-                <GameTimer round={liveGameRound} />
+             
                 
-                 <div>
-                    <Label className="mb-2 block font-semibold">1. Select a Color</Label>
-                    <ToggleGroup type="single" value={betOnColor} onValueChange={(val: any) => val && setBetOnColor(val)} className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                
+                 
+                    1. Select a Color
+                    
                         {colors.map(color => (
-                            <div key={color} className="relative">
-                                <ToggleGroupItem value={color} aria-label={`Bet on ${color}`} className={`w-full h-20 text-xl ${colorClasses[color]}`}>
+                            
+                                
                                     {color}
-                                </ToggleGroupItem>
+                                
                                 {userBetsByColor[color] > 0 && (
-                                    <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                                        ₹{userBetsByColor[color]}
-                                    </div>
-                                )}
-                            </div>
+                                     ₹{userBetsByColor[color]}
+                                    )}
+                            
                         ))}
-                    </ToggleGroup>
-                 </div>
+                    
+                 
 
-                 <div>
-                    <Label htmlFor="bet-amount" className="mb-2 block font-semibold">2. Enter your bet amount</Label>
-                    <div className="flex gap-2">
-                        <Input 
-                            id="bet-amount" 
-                            type="number" 
-                            placeholder="Bet Amount"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            min="1"
-                            step="any"
-                            required
-                            disabled={isLoading}
-                            className="text-lg h-12"
-                        />
-                        <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(10)}>+10</Button>
-                        <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(50)}>+50</Button>
-                        <Button type="button" variant="outline" className="h-12" onClick={() => handlePresetAmount(100)}>+100</Button>
-                    </div>
-                </div>
+                 
+                    2. Enter your bet amount
+                    
+                        
+                            
+                            
+                            
+                            
+                            
+                            
+                        
+                        
+                         
+                         
+                         
+                         
+                    
+                
 
-                <Button onClick={handleBet} className="w-full text-lg py-6" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Gem className="mr-2 h-5 w-5" />}
+                
+                    {isLoading ?  : }
                     {isLoading ? 'Placing Bet...' : `Place Bet on ${betOnColor} (₹${amount || 0})`}
-                </Button>
-            </div>
+                
+            
         )
     }
 
      return (
-        <div className="text-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <p className="mt-4 text-muted-foreground">Syncing with live game...</p>
-        </div>
+         
+            
+                
+                Syncing with live game...
+            
+         
     );
   }
 
   return (
-    <CardContent className="pt-6 flex-1 flex flex-col justify-center">
+    
         {renderGameContent()}
-    </CardContent>
+    
   );
 }

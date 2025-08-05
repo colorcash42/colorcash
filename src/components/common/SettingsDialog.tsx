@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -56,7 +57,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const { toast } = useToast();
   
-  const form = useForm<PasswordFormValues>({
+  const form = useForm({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
         currentPassword: "",
@@ -65,7 +66,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
     }
   });
 
-  const onSubmit: SubmitHandler<PasswordFormValues> = async (data) => {
+  const onSubmit: SubmitHandler = async (data) => {
     setIsPasswordLoading(true);
     const result = await changePassword(data.currentPassword, data.newPassword);
     if(result.success) {
@@ -81,144 +82,151 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
+    
+      
+        
+          
+            Settings
             Customize your application experience.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-6">
-            <div>
-                <h3 className="mb-4 text-sm font-medium">Theme</h3>
-                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'dark-pro')}>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="light" id="theme-light" />
-                        <Label htmlFor="theme-light" className="flex items-center gap-2">
-                            <Sun className="h-4 w-4" />
-                            Light
-                        </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="dark" id="theme-dark" />
-                        <Label htmlFor="theme-dark" className="flex items-center gap-2">
-                            <Moon className="h-4 w-4" />
-                            Dark (Original)
-                        </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="dark-pro" id="theme-dark-pro" />
-                        <Label htmlFor="theme-dark-pro" className="flex items-center gap-2">
-                            <Moon className="h-4 w-4" />
-                            Dark Pro
-                        </Label>
-                    </div>
-                </RadioGroup>
-            </div>
+          
+        
+        
+            
+                
+                    Theme
+                
+                
+                    
+                        
+                            
+                        
+                        
+                            
+                                
+                                Light
+                            
+                        
+                    
+                    
+                        
+                            
+                        
+                        
+                            
+                                
+                                Dark (Original)
+                            
+                        
+                    
+                    
+                        
+                            
+                        
+                        
+                            
+                                
+                                Dark Pro
+                            
+                        
+                    
+                
+            
 
-            <Separator />
+            
+            
 
-            <div>
-                <h3 className="mb-4 text-sm font-medium">Audio</h3>
-                 <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="sound-mode" className="flex items-center gap-2">
-                      {soundEnabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4" />}
-                      Sound Effects
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enable or disable in-game sounds.
-                    </p>
-                  </div>
-                  <Switch
-                    id="sound-mode"
-                    checked={soundEnabled}
-                    onCheckedChange={setSoundEnabled}
-                  />
-                </div>
-              </div>
+            
+                
+                    Audio
+                     
+                      
+                        
+                           
+                               {soundEnabled ?  : }
+                               Sound Effects
+                            
+                            Enable or disable in-game sounds.
+                        
+                         
+                      
+                    
+                  
+              
 
-            <Separator />
+            
              
-            <div>
-                 <h3 className="mb-4 text-sm font-medium">Security</h3>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 rounded-lg border p-4 shadow-sm">
-                        <FormField
-                            control={form.control}
-                            name="currentPassword"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Current Password</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="••••••••" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="newPassword"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>New Password</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="••••••••" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="confirmPassword"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Confirm New Password</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="••••••••" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={isPasswordLoading}>
-                            {isPasswordLoading ? <Loader2 className="animate-spin" /> : <Lock />}
-                            {isPasswordLoading ? "Updating..." : "Update Password"}
-                        </Button>
-                    </form>
-                </Form>
-            </div>
-
+            
+                 
+                    Security
+                   
+                        
+                            
+                                
+                                    Current Password
+                                
+                                
+                                    
+                                        
+                                        
+                                    
+                                    
+                                
+                            
+                            
+                                
+                                    New Password
+                                
+                                
+                                    
+                                        
+                                        
+                                    
+                                    
+                                
+                            
+                            
+                                
+                                    Confirm New Password
+                                
+                                
+                                    
+                                        
+                                        
+                                    
+                                    
+                                
+                            
+                            
+                                {isPasswordLoading ?  : }
+                                {isPasswordLoading ? "Updating..." : "Update Password"}
+                            
+                        
+                    
+                
 
             {isUserAdmin && (
               <>
-                <Separator />
-                <div>
-                  <h3 className="mb-4 text-sm font-medium">Developer Options</h3>
-                   <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="admin-mode" className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-primary" />
-                        View as Admin
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Enable to see the admin panel and features.
-                      </p>
-                    </div>
-                    <Switch
-                      id="admin-mode"
-                      checked={viewAsAdmin}
-                      onCheckedChange={setViewAsAdmin}
-                    />
-                  </div>
-                </div>
+                
+                
+                    
+                      Developer Options
+                       
+                        
+                           
+                               
+                                View as Admin
+                            
+                            Enable to see the admin panel and features.
+                        
+                         
+                      
+                    
+                  
+                
               </>
             )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        
+      
+    
   );
 }

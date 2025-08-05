@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAppContext } from "@/context/AppContext";
@@ -42,74 +43,74 @@ export function RequestsTable() {
   }
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="font-headline">Pending Requests</CardTitle>
-        <CardDescription>
+    
+      
+        
+          Pending Requests
           Review deposit and withdrawal requests from users.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="w-full overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>User ID</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Details</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedPendingTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+        
+      
+      
+        
+          
+            
+              
+                
+                  Date
+                  User ID
+                  Type
+                  Amount
+                  Details
+                  Actions
+                
+              
+              
+                {sortedPendingTransactions.length === 0 ? (
+                  
                     No pending requests.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedPendingTransactions.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="text-xs text-muted-foreground">
+                  
+                ) : (
+                  sortedPendingTransactions.map((t) => (
+                    
+                      
                         {t.timestamp ? format(toDate(t.timestamp), 'PP pp') : 'No date'}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground font-mono">
+                      
+                      
                         {t.userId}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={t.type === 'deposit' ? "default" : "secondary"}>
+                      
+                      
                         {t.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium tabular-nums">₹{t.amount.toFixed(2)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                      
+                      
+                        ₹{t.amount.toFixed(2)}
+                      
+                      
                         {t.type === 'deposit' ? `UTR: ${t.utr}` : `UPI: ${t.upi}`}
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      {processingId === t.id ? (
-                        <Loader2 className="h-5 w-5 animate-spin ml-auto" />
-                      ) : (
-                        <>
-                          <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={() => onHandleTransaction(t.id, 'approved')}>
-                              <CheckCircle className="h-5 w-5" />
-                              <span className="sr-only">Approve</span>
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => onHandleTransaction(t.id, 'rejected')}>
-                              <XCircle className="h-5 w-5" />
-                              <span className="sr-only">Reject</span>
-                          </Button>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                      
+                      
+                        {processingId === t.id ? (
+                          
+                        ) : (
+                          <>
+                            
+                                
+                                
+                            
+                            
+                                
+                                
+                            
+                          </>
+                        )}
+                      
+                    
+                  ))
+                )}
+              
+            
+          
+        
+      
+    
   );
 }

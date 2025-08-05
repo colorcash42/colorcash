@@ -59,53 +59,56 @@ function DepositForm() {
     };
 
     return (
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-            <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-secondary/50">
-                 <h3 className="text-lg font-semibold mb-4">Scan to Pay</h3>
-                 <div className="relative w-48 h-48 mb-4">
-                    <img 
-                        src="/qrcode.jpg" 
-                        alt="UPI QR Code for 8949956264@kotak" 
-                        width="192"
-                        height="192"
-                        className="object-contain"
-                    />
-                 </div>
-                 <div className="text-center space-y-3">
-                    <div>
-                        <p className="font-semibold text-sm">Or pay to UPI ID:</p>
-                        <div className="flex items-center gap-2 mt-1 bg-background p-2 rounded-md">
-                            <span className="font-mono text-sm">{upiId}</span>
-                            <Button variant="ghost" size="icon" onClick={handleCopy}>
-                                <Copy className="h-4 w-4"/>
-                            </Button>
-                        </div>
-                    </div>
-                    <a href="/qrcode.jpg" download="qrcode.jpg" className={cn(buttonVariants({ variant: "outline" }))}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download QR
-                    </a>
-                 </div>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                 <div>
-                    <h3 className="font-semibold">Step 2: Confirm Deposit</h3>
-                    <p className="text-sm text-muted-foreground">After paying, enter the details below to confirm your deposit.</p>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="deposit-amount">Amount Deposited</Label>
-                    <Input id="deposit-amount" type="number" placeholder="e.g., 500" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="utr">UTR / Transaction ID</Label>
-                    <Input id="utr" type="text" placeholder="Enter the 12-digit UTR" value={utr} onChange={e => setUtr(e.target.value)} required disabled={isLoading} />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowDownCircle className="mr-2 h-4 w-4" />}
-                    {isLoading ? "Submitting..." : "Confirm Deposit"}
-                </Button>
-            </form>
-        </div>
+        
+            
+
+                 
+                 
+                    
+                        
+                        
+                    
+                 
+                 
+
+                        
+
+                        
+                            
+                                
+                            
+                        
+                        
+                            
+                                
+                                Download QR
+                            
+                        
+                    
+                 
+            
+            
+
+                 
+                    
+                    
+                
+                
+                    
+                    
+                    
+                
+                
+                    
+                    
+                    
+                
+                 
+                    
+                    
+                
+            
+        
     );
 }
 
@@ -139,64 +142,70 @@ function WithdrawalForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="withdrawal-amount">Amount</Label>
-                <Input id="withdrawal-amount" type="number" placeholder="e.g., 200" value={amount} onChange={e => setAmount(e.target.value)} required disabled={isLoading} max={walletBalance} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="upi">Your UPI ID for payment</Label>
-                <Input id="upi" type="text" placeholder="yourname@bank" value={upi} onChange={e => setUpi(e.target.value)} required disabled={isLoading} />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowUpCircle className="mr-2 h-4 w-4" />}
-                {isLoading ? "Submitting..." : "Request Withdrawal"}
-            </Button>
-        </form>
+        
+            
+                Amount
+                
+            
+            
+                Your UPI ID for payment
+                
+            
+             
+                
+                
+            
+        
     );
 }
 
 function TransactionHistory() {
     const { transactions } = useAppContext();
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className='font-headline'>Transaction History</CardTitle>
-                <CardDescription>A log of your deposits and withdrawals.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="w-full overflow-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className='text-right'>Date</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions.length === 0 ? (
-                                <TableRow><TableCell colSpan={4} className='h-24 text-center'>No transactions yet.</TableCell></TableRow>
-                            ) : (
-                                transactions.map(t => (
-                                    <TableRow key={t.id}>
-                                        <TableCell className='font-medium capitalize'>{t.type}</TableCell>
-                                        <TableCell>₹{t.amount.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={t.status === 'approved' ? 'default' : t.status === 'rejected' ? 'destructive' : 'secondary'}>
-                                                {t.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className='text-right text-xs text-muted-foreground'>{t.timestamp ? format(toDate(t.timestamp), 'PP pp') : ''}</TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+        
+            
+                
+                    Transaction History
+                
+                A log of your deposits and withdrawals.
+            
+            
+                
+                    
+                        
+                            Type
+                        
+                        
+                            Amount
+                        
+                        
+                            Status
+                        
+                        
+                            Date
+                        
+                    
+                    
+                        
+                            No transactions yet.
+                        
+                        
+                            
+                                
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                
+                            
+                        
+                    
+                
+            
+        
     );
 }
 
@@ -205,7 +214,7 @@ function ReferAndEarn() {
     const { toast } = useToast();
 
     if (!userData) {
-        return <Loader2 className="animate-spin" />;
+        return ;
     }
 
     const handleCopyCode = () => {
@@ -224,7 +233,7 @@ function ReferAndEarn() {
         // The Web Share API is more complex than just checking for navigator.share.
         // It requires a secure context (HTTPS) and a user gesture.
         // In some development environments, it might not work.
-        // We will try to use it, and if it fails, we fall back to copying to the clipboard.
+        // We will try to use it, and if it fails, we fall back to copying.
         if (navigator.share) {
             try {
                 await navigator.share(shareData);
@@ -242,104 +251,100 @@ function ReferAndEarn() {
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className='font-headline'>Refer &amp; Earn</CardTitle>
-                <CardDescription>
-                    Invite your friends and earn rewards when they sign up.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Alert>
-                        <Users className="h-4 w-4" />
-                        <AlertTitle>Successful Referrals</AlertTitle>
-                        <AlertDescription className="text-2xl font-bold">
-                            {userData.successfulReferrals || 0}
-                        </AlertDescription>
-                    </Alert>
-                    <Alert>
-                        <Gift className="h-4 w-4" />
-                        <AlertTitle>Total Referral Earnings</AlertTitle>
-                        <AlertDescription className="text-2xl font-bold">
-                            ₹{(userData.referralEarnings || 0).toFixed(2)}
-                        </AlertDescription>
-                    </Alert>
-                </div>
+        
+            
+                
+                    Refer & Earn
+                
+                Invite your friends and earn rewards when they sign up.
+            
+            
+                
+                    
+                        
+                            
+                                Successful Referrals
+                            
+                            
+                                {userData.successfulReferrals || 0}
+                            
+                        
+                    
+                    
+                        
+                            
+                                Total Referral Earnings
+                            
+                            
+                                ₹{(userData.referralEarnings || 0).toFixed(2)}
+                            
+                        
+                    
+                
 
-                <div className="text-center p-4 border-2 border-dashed rounded-lg space-y-2">
-                    <Label htmlFor="referral-code" className="text-sm text-muted-foreground">Your Referral Code</Label>
-                    <div className="flex items-center justify-center gap-2">
-                        <Input 
-                            id="referral-code"
-                            readOnly 
-                            value={userData.referralCode}
-                            className="text-center text-lg font-bold bg-secondary/50 h-12"
-                        />
-                         <Button variant="ghost" size="icon" onClick={handleCopyCode}>
-                            <Copy className="h-5 w-5"/>
-                        </Button>
-                    </div>
-                </div>
+                
+                    
+                        Your Referral Code
+                        
+                            
+                                
+                            
+                             
+                        
+                    
+                
 
-                <Button onClick={handleShare} className="w-full">
-                    <Share2 className="mr-2 h-4 w-4" />
+                 
                     Share Your Code
-                </Button>
+                
 
-                 <Alert variant="default" className="bg-primary/10 border-primary/20">
-                    <Gift className="h-4 w-4" />
-                    <AlertTitle className="font-semibold">How it Works</AlertTitle>
-                    <AlertDescription>
-                        When your friend signs up with your code, they get a <span className="font-bold">₹75 bonus</span> and you get <span className="font-bold">₹25</span> in your wallet!
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-        </Card>
+                 
+                    
+                        
+                        
+                            How it Works
+                        
+                        
+                            When your friend signs up with your code, they get a bonus and you get in your wallet!
+                        
+                    
+                
+            
+        
     )
 }
 
 export function WalletTabs() {
   return (
-    <Tabs defaultValue="deposit" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="deposit">Deposit</TabsTrigger>
-        <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-        <TabsTrigger value="refer">Refer &amp; Earn</TabsTrigger>
-        <TabsTrigger value="history">History</TabsTrigger>
-      </TabsList>
-      <TabsContent value="deposit">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className='font-headline'>Deposit Funds</CardTitle>
-            <CardDescription>
+    
+      
+        
+        
+        
+        
+      
+      
+        
+          
+            
               Step 1: Pay using the QR code or UPI ID. After paying, submit the transaction details.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DepositForm />
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="withdraw">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className='font-headline'>Withdraw Winnings</CardTitle>
-            <CardDescription>
+            
+          
+          
+        
+      
+      
+        
+          
+            
               Request a withdrawal to your UPI account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WithdrawalForm />
-          </CardContent>
-        </Card>
-      </TabsContent>
-       <TabsContent value="refer">
-        <ReferAndEarn />
-      </TabsContent>
-      <TabsContent value="history">
-        <TransactionHistory />
-      </TabsContent>
-    </Tabs>
+            
+          
+          
+        
+      
+       
+      
+    
   );
 }
