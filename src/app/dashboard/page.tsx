@@ -15,29 +15,29 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 
 const GameCard = ({ icon, title, description, href, className }) => (
-    
-        
-            
-                
+    <Card className={cn("flex flex-col", className)}>
+        <CardHeader>
+            <div className="flex items-center gap-4">
+                <div className="bg-primary/10 p-3 rounded-full">
                     {icon}
-                
-                
-                    {title}
-                    {description}
-                
-            
-        
-        
+                </div>
+                <div>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent className="flex-grow">
             {/* Can add more details or image here in future */}
-        
-        
-            
-                
-                    Play Now 
-                
-            
-        
-    
+        </CardContent>
+        <CardFooter>
+            <Button asChild className="w-full">
+                <Link href={href}>
+                    Play Now <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+        </CardFooter>
+    </Card>
 );
 
 export default function DashboardPage() {
@@ -45,56 +45,57 @@ export default function DashboardPage() {
 
   return (
     <PageClientAuth>
-      
-        
-         
-          
-            
+      <div className="flex flex-col min-h-screen">
+        <Header />
+         <main className="flex-1 p-4 md:p-6 space-y-6">
+          <Marquee />
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">
                 Choose Your Game
-                Select a game from the options below to start playing.
+            </h1>
+            <p className="text-muted-foreground">Select a game from the options below to start playing.</p>
+          </div>
             
-            
-                
-            
-            
-              
-                लाइव गेम का समय
+            <Alert className="bg-yellow-500/10 border-yellow-500/50 text-yellow-700 dark:text-yellow-400 [&>svg]:text-yellow-700 dark:[&>svg]:text-yellow-400">
+              <Clock className="h-4 w-4" />
+              <AlertTitle>लाइव गेम का समय</AlertTitle>
+              <AlertDescription>
                 कृपया ध्यान दें: लाइव गेम राउंड केवल रात 8:00 बजे से 11:00 बजे तक ही उपलब्ध रहेगा।
-              
-            
+              </AlertDescription>
+            </Alert>
 
-            
-              
-                
-                    
-                    ColorCash
-                    Bet on colors, numbers, and sizes.
-                    
-                
-                 
-                    
-                    Odd or Even
-                    Guess if the die roll is odd or even.
-                    
-                
-                 
-                    
-                    Live 4-Color Game
-                    Join the live game with timed rounds!
-                    
-                
-              
-            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <GameCard 
+                icon={<Palette className="h-6 w-6 text-primary" />} 
+                title="ColorCash" 
+                description="Bet on colors, numbers, and sizes." 
+                href="/games/color-cash"
+                className="hover:shadow-lg transition-shadow"
+              />
+               <GameCard 
+                icon={<Dices className="h-6 w-6 text-primary" />} 
+                title="Odd or Even" 
+                description="Guess if the die roll is odd or even." 
+                href="/games/odd-even"
+                className="hover:shadow-lg transition-shadow"
+              />
+               <GameCard 
+                icon={<Gamepad2 className="h-6 w-6 text-primary" />} 
+                title="Live 4-Color Game" 
+                description="Join the live game with timed rounds!" 
+                href="/live"
+                className="hover:shadow-lg transition-shadow"
+              />
+            </div>
 
-            
-                
-                    Your Bet History
-                
-                
-            
-          
-         
-      
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Bet History</CardTitle>
+                </CardHeader>
+                <BetHistoryTable initialBets={bets} />
+            </Card>
+          </main>
+      </div>
     </PageClientAuth>
   );
 }

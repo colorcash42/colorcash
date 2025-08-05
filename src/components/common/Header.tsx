@@ -13,6 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
@@ -51,120 +52,104 @@ export function Header() {
 
   return (
     <>
-      
-        
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center space-x-4">
           
-          
-            
-                
-                
+          <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
+            <Gem className="h-6 w-6 text-primary" />
+            <span className="font-bold font-headline">
                 ColorCash
-                
-            
-          
+            </span>
+          </Link>
 
-          
-          
+          <nav className="hidden items-center space-x-1 md:flex">
               {navLinks.map((link) => {
                   const onGamePage = pathname.startsWith('/games/');
                   const isCurrentLink = onGamePage ? link.href === '/dashboard' : pathname === link.href;
                   const label = onGamePage && link.href === '/dashboard' ? link.lobbyLabel : link.label;
-                  const icon = (onGamePage && link.href === '/dashboard') ?  : ;
+                  const Icon = (onGamePage && link.href === '/dashboard') ? LayoutGrid : link.icon;
                   
                   return (
-                    
-                        
-                            {icon}
+                    <Button key={link.href} variant="ghost" asChild className={cn("text-sm font-medium", !isCurrentLink && "text-muted-foreground")}>
+                        <Link href={link.href}>
+                            <Icon />
                             {label}
-                        
-                    
+                        </Link>
+                    </Button>
                   );
               })}
               {showAdminLink && (
-                 
-                      
-                          
+                 <Button variant="ghost" asChild className={cn("text-sm font-medium", pathname !== adminLink.href && "text-muted-foreground")}>
+                      <Link href={adminLink.href}>
+                          <ShieldCheck />
                           {adminLink.label}
-                      
-                  
+                      </Link>
+                  </Button>
               )}
-          
+          </nav>
 
-          
-            
-              
-                
+          <div className="flex flex-1 items-center justify-end space-x-4">
+            <Button variant="outline" className="hidden sm:inline-flex">
+              <CircleDollarSign />
                 ₹{walletBalance.toFixed(2)}
-              
-            
-            
-              
-                
-                  
-                    
-                        {user ? getInitials(user.email) : }
-                    
-                    Open user menu
-                  
-                
-                
-                  
-                    My Account
-                  
-                  
-                  
-                    
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon" className="rounded-full">
+                  <Avatar>
+                    <AvatarFallback>{user ? getInitials(user.email) : '?'}</AvatarFallback>
+                  </Avatar>
+                  <span className="sr-only">Open user menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                  <DropdownMenuGroup className="md:hidden">
                       {navLinks.map((link) => {
                           const onGamePage = pathname.startsWith('/games/');
                           const label = onGamePage && link.href === '/dashboard' ? link.lobbyLabel : link.label;
-                          const icon = onGamePage && link.href === '/dashboard' ?  : ;
+                          const Icon = onGamePage && link.href === '/dashboard' ? LayoutGrid : link.icon;
                           
                           return (
-                             
-                                {icon}
-                                
-                                    {label}
-                                
-                             
+                             <DropdownMenuItem key={link.href} asChild>
+                                <Link href={link.href}>
+                                <Icon />
+                                <span>{label}</span>
+                                </Link>
+                             </DropdownMenuItem>
                           );
                       })}
                       {showAdminLink && (
-                          
-                            
-                                
-                                
-                                    {adminLink.label}
-                                
-                            
-                          
+                          <DropdownMenuItem asChild>
+                            <Link href={adminLink.href}>
+                                <ShieldCheck />
+                                <span>{adminLink.label}</span>
+                            </Link>
+                          </DropdownMenuItem>
                       )}
-                       
-                    
-                  
-                  
-                    
-                      
-                       Settings
-                    
-                    
-                      
-                       Help & Support
-                    
-                  
-                  
-                    
-                      
-                       Log out
-                    
-                  
-                
-              
-            
-          
-        
-      
-       
-       
+                       <DropdownMenuSeparator />
+                    </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onSelect={() => setIsSettingsOpen(true)}>
+                       <Settings /> Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsHelpOpen(true)}>
+                       <LifeBuoy /> Help & Support
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={handleLogout}>
+                     <LogOut /> Log out
+                  </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
+       <SettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+       <HelpDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
     </>
   );
 }

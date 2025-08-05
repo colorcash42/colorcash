@@ -29,43 +29,41 @@ export default function AdminPage() {
   if (!isAuthorized) {
     return (
         <PageClientAuth>
-             
-                
-                     
-                        
-                            
-                                 
-                                    Access Denied
-                                
-                            
-                            
-                                You do not have permission to view this page. Redirecting...
-                            
-                        
-                    
-                
-            
+             <div className="flex flex-col min-h-screen">
+                <main className="flex-1 flex items-center justify-center">
+                    <Card className="w-full max-w-md m-4">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <AlertTriangle className="text-destructive" />
+                                 Access Denied
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p>You do not have permission to view this page. Redirecting...</p>
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
         </PageClientAuth>
     );
   }
 
   return (
     <PageClientAuth>
-      
-        
-             
-                
-                    Admin Panel
-                    Manage live games and user transactions.
-                
+      <div className="flex flex-col min-h-screen">
+        <Header />
+         <main className="flex-1 p-4 md:p-6 space-y-6">
+             <div className="space-y-1">
+                <h1 className="text-2xl font-bold">Admin Panel</h1>
+                <p className="text-muted-foreground">Manage live games and user transactions.</p>
+            </div>
 
-                
-                
+            <LiveGameAdmin />
+            <Separator />
+            <RequestsTable />
 
-                
-            
-         
-      
+        </main>
+      </div>
     </PageClientAuth>
   );
 }

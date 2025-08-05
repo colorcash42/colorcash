@@ -2,6 +2,7 @@
 "use client";
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 const marqueeMessages = [
   "Welcome to ColorCash! 🚀",
@@ -16,21 +17,21 @@ const extendedMessages = [...marqueeMessages, ...marqueeMessages, ...marqueeMess
 
 export function Marquee() {
   return (
-    
-      
+    <div className="relative flex w-full overflow-x-hidden bg-primary/10 py-2 rounded-lg border">
+      <div className="whitespace-nowrap animate-marquee">
         {extendedMessages.map((msg, i) => (
-          
+          <span key={i} className="mx-4 text-sm font-medium text-primary">
             {msg}
-          
+          </span>
         ))}
-      
-       
+      </div>
+       <div className="absolute top-0 whitespace-nowrap animate-marquee2">
          {extendedMessages.map((msg, i) => (
-          
+          <span key={i} className="mx-4 text-sm font-medium text-primary">
             {msg}
-          
+          </span>
         ))}
-      
-    
+      </div>
+    </div>
   );
 }

@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 export function ClientWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useAppContext();
   return (
-    
+    <div className={cn("antialiased font-body", theme)}>
       {children}
-    
+    </div>
   )
 }
