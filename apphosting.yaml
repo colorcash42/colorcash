@@ -1,6 +1,13 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# The set of roles granted to your App Hosting backend.
+iam:
+  - roles/firebasedatabase.user
+  - roles/firebaseauth.viewer
+  - roles/datastore.user
+  - roles/run.invoker
+
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
