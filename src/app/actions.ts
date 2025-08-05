@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { Bet, Transaction, LiveGameRound, LiveBet, UserData } from "@/lib/types";
