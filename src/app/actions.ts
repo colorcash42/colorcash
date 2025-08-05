@@ -5,7 +5,6 @@ import type { Bet, Transaction, LiveGameRound, LiveBet, UserData } from "@/lib/t
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, runTransaction, query, orderBy, getDocs, addDoc, serverTimestamp, updateDoc, where, Timestamp, limit, collectionGroup, increment, setDoc } from "firebase/firestore";
-import { suggestBet } from "@/ai/flows/suggest-bet-flow";
 import { getAuth } from "firebase-admin/auth";
 import { app } from "@/lib/firebase-admin"; // Import admin app
 
@@ -489,8 +488,9 @@ export async function getGuruSuggestionAction(history: Bet[]): Promise<{ suggest
   try {
     // We only care about colorcash history for the guru for now.
     const colorCashHistory = history.filter(b => b.gameId === 'colorcash' || !b.gameId);
-    const result = await suggestBet({ history: colorCashHistory });
-    return { suggestion: result.suggestion };
+    // const result = await suggestBet({ history: colorCashHistory });
+    // return { suggestion: result.suggestion };
+    return { suggestion: "The Guru is currently meditating." };
   } catch (error) {
     console.error('Error getting suggestion:', error);
     return { error: 'Sorry, the guru is currently meditating. Please try again later.' };

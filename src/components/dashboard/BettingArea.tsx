@@ -213,9 +213,9 @@ export function BettingArea({ walletBalance }: { walletBalance: number }) {
         </div>
         
         <div className="space-y-2">
-            <Button variant="secondary" onClick={handleGetSuggestion} disabled={isGuruLoading} className="w-full">
+            <Button variant="secondary" onClick={handleGetSuggestion} disabled={isGuruLoading || true} className="w-full">
                 {isGuruLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                {isGuruLoading ? 'Consulting the Guru...' : 'Get Guru Suggestion'}
+                {isGuruLoading ? 'Consulting the Guru...' : 'Get Guru Suggestion (Coming Soon)'}
             </Button>
             {guruSuggestion && (
                  <Alert className="bg-purple-500/10 border-purple-500/50 text-purple-700 dark:text-purple-400 [&>svg]:text-purple-700 dark:[&>svg]:text-purple-400">
