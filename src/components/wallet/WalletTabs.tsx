@@ -31,6 +31,7 @@ function DepositForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     const upiId = "8949956264@kotak";
+    const qrCodeUrl = "https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/assets%2Fupi-qr-code.png?alt=media&token=3961b7f4-3864-4e3a-9e79-843812d8a0f9";
 
     const handleCopy = () => {
         navigator.clipboard.writeText(upiId);
@@ -66,7 +67,7 @@ function DepositForm() {
                  </CardHeader>
                  <CardContent className="flex flex-col items-center gap-4">
                         <div className="bg-white p-2 rounded-lg border">
-                           <img src="https://placehold.co/200x200.png" data-ai-hint="QR code" alt="QR Code for UPI Payment" width={200} height={200} />
+                           <img src={qrCodeUrl} data-ai-hint="QR code" alt="QR Code for UPI Payment" width={200} height={200} />
                         </div>
                         <div className="w-full space-y-2">
                            <Button onClick={handleCopy} variant="outline" className="w-full">
@@ -74,7 +75,7 @@ function DepositForm() {
                                 <Copy className="ml-auto" />
                             </Button>
                            <Button asChild variant="outline" className="w-full">
-                                <a href="https://placehold.co/200x200.png" download="colorcash-qr.png">
+                                <a href={qrCodeUrl} download="colorcash-qr.png">
                                     <Download /> Download QR
                                 </a>
                             </Button>
