@@ -1,4 +1,4 @@
-
+it
 # ColorCash Game
 
 This is a NextJS starter project for ColorCash, built in Firebase Studio.
