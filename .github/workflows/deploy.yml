@@ -4,7 +4,8 @@ name: Deploy to Firebase App Hosting
 on:
   push:
     branches:
-      - main  # Or your default branch
+      - main
+      - master
 
 jobs:
   deploy:
@@ -31,4 +32,3 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TRIVIUM_CLASH }}'
           channelId: live
           projectId: trivium-clash
-
