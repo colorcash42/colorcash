@@ -50,7 +50,7 @@ export default function DashboardPage() {
           <Marquee />
           <div className="space-y-2">
             <h1 className="text-2xl font-bold">
-                Choose Your Game
+                Welcome! Choose Your Game
             </h1>
             <p className="text-muted-foreground">Select a game from the options below to start playing.</p>
           </div>
