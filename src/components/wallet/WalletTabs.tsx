@@ -31,7 +31,7 @@ function DepositForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     const upiId = "8949956264@kotak";
-    const qrCodeUrl = "https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/assets%2Fupi-qr-code.png?alt=media&token=3961b7f4-3864-4e3a-9e79-843812d8a0f9";
+    const qrCodeUrl = "/qrcode.png"; // Use local public folder image
 
     const handleCopy = () => {
         navigator.clipboard.writeText(upiId);
