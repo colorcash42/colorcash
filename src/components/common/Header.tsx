@@ -87,10 +87,14 @@ export function Header() {
               )}
           </nav>
 
-          <div className="flex flex-1 items-center justify-end space-x-4">
-            <Button variant="outline" className="hidden sm:inline-flex">
-              <CircleDollarSign />
-                ₹{walletBalance.toFixed(2)}
+          <div className="flex flex-1 items-center justify-end space-x-2 sm:space-x-4">
+             <Button variant="outline" asChild>
+                <Link href="/wallet">
+                    <CircleDollarSign />
+                    <span className="hidden sm:inline-block">
+                      ₹{walletBalance.toFixed(2)}
+                    </span>
+                </Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
