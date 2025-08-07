@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
-  output: 'export', // Required for App Router to produce a static export
+  // output: 'export', // This line is removed to enable Server Actions
   // This is the crucial change to disable image optimization
   // and allow the build to succeed with static images in the public folder.
   images: {
