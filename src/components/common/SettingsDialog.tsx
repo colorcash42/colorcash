@@ -94,7 +94,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
         <div className="py-4 space-y-6">
             <div className="space-y-2">
                 <Label>Theme</Label>
-                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="grid grid-cols-3 gap-2">
+                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Label className="p-2 border rounded-md has-[:checked]:border-primary flex flex-col items-center justify-center cursor-pointer">
                         <RadioGroupItem value="light" id="light" className="sr-only" />
                         <Sun className="h-6 w-6 mb-1"/>
