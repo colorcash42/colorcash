@@ -91,7 +91,7 @@ export function Header() {
              <Button variant="outline" asChild>
                 <Link href="/wallet">
                     <CircleDollarSign />
-                    <span className="hidden sm:inline-block">
+                    <span>
                       ₹{walletBalance.toFixed(2)}
                     </span>
                 </Link>
