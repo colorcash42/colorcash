@@ -88,20 +88,22 @@ function DepositForm() {
                     <CardTitle>Submit Deposit Details</CardTitle>
                     <CardDescription>After paying, enter the amount and UTR/Transaction ID to confirm your deposit.</CardDescription>
                  </CardHeader>
-                 <CardContent as="form" onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <Label htmlFor="deposit-amount">Amount Deposited</Label>
-                        <Input id="deposit-amount" type="number" placeholder="e.g., 500" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-                    </div>
-                    <div>
-                        <Label htmlFor="deposit-utr">UTR / Transaction ID</Label>
-                        <Input id="deposit-utr" type="text" placeholder="Enter the 12-digit ID" value={utr} onChange={(e) => setUtr(e.target.value)} required />
-                    </div>
-                     <Button type="submit" disabled={isLoading} className="w-full">
-                        {isLoading ? <Loader2 className="animate-spin" /> : null}
-                        {isLoading ? "Submitting..." : "Submit Deposit Request"}
-                    </Button>
-                </CardContent>
+                <form onSubmit={handleSubmit}>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <Label htmlFor="deposit-amount">Amount Deposited</Label>
+                            <Input id="deposit-amount" type="number" placeholder="e.g., 500" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+                        </div>
+                        <div>
+                            <Label htmlFor="deposit-utr">UTR / Transaction ID</Label>
+                            <Input id="deposit-utr" type="text" placeholder="Enter the 12-digit ID" value={utr} onChange={(e) => setUtr(e.target.value)} required />
+                        </div>
+                        <Button type="submit" disabled={isLoading} className="w-full">
+                            {isLoading ? <Loader2 className="animate-spin" /> : null}
+                            {isLoading ? "Submitting..." : "Submit Deposit Request"}
+                        </Button>
+                    </CardContent>
+                </form>
             </Card>
         </div>
     );
@@ -317,3 +319,5 @@ export function WalletTabs() {
     </Tabs>
   );
 }
+
+    
