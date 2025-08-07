@@ -90,7 +90,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
             Customize your application experience.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="pr-6 -mr-6">
+        <ScrollArea className="flex-grow pr-6 -mr-6">
         <div className="py-4 space-y-6">
             <div className="space-y-2">
                 <Label>Theme</Label>
