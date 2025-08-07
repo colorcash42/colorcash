@@ -21,6 +21,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -82,13 +83,14 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
             Customize your application experience.
           </DialogDescription>
         </DialogHeader>
+        <ScrollArea className="pr-6 -mr-6">
         <div className="py-4 space-y-6">
             <div className="space-y-2">
                 <Label>Theme</Label>
@@ -200,6 +202,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
               </>
             )}
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
