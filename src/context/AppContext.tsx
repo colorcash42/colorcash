@@ -104,7 +104,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [liveGameRound, setLiveGameRound] = useState<LiveGameRound | null>(null);
   const [userLiveBets, setUserLiveBets] = useState<LiveBet[]>([]);
-  const [theme, setThemeState] = useState<Theme>('light'); // Always default to light
+  const [theme, setThemeState] = useState<Theme>('light');
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const { toast } = useToast();
@@ -117,7 +117,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (currentUid) {
         const isAdmin = ADMIN_UIDS.includes(currentUid);
 
-        // All users fetch their own data
         const [userDataRes, betsRes, transactionsRes] = await Promise.all([
             getUserData(currentUid),
             getBets(currentUid),
@@ -133,19 +132,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setBets(betsRes.bets);
         setTransactions(transactionsRes.transactions);
 
-        // Only admins fetch all pending transactions
         if (isAdmin) {
             const pendingTransRes = await getPendingTransactions();
             setPendingTransactions(pendingTransRes.transactions);
         } else {
-            setPendingTransactions([]); // Ensure non-admins have an empty list
+            setPendingTransactions([]);
         }
     }
   }, [user?.uid]);
 
   useEffect(() => {
-    // No longer need to check local storage for theme
-    setThemeState('light');
+    const storedTheme = localStorage.getItem("theme") as Theme | null;
+    if (storedTheme) {
+      setThemeState(storedTheme);
+    }
     
      const storedSound = localStorage.getItem("soundEnabled");
     if (storedSound) {
@@ -160,7 +160,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     
-    // Set up a real-time listener for the live game status
     const liveStatusRef = doc(db, "liveGameStatus", "current");
     const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
         if (doc.exists()) {
@@ -179,10 +178,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         unsubscribeAuth();
         unsubscribeLiveGame();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Listener for user's bets in the current live round
   useEffect(() => {
     if (user && liveGameRound) {
         const betsRef = collection(db, "bets");
@@ -198,14 +195,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         return () => unsubscribe();
     } else {
-        // Clear bets if there's no user or no active round
         setUserLiveBets([]);
     }
   }, [user, liveGameRound]);
 
-  // This function no longer needs to do anything but satisfies the type
   const setTheme = (theme: Theme) => {
-    // Dark theme is removed, so this function is effectively disabled.
+    setThemeState(theme);
+    localStorage.setItem("theme", theme);
   };
   
   const setSoundEnabled = (enabled: boolean) => {
@@ -226,7 +222,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // Data fetching is handled by onAuthStateChanged, but we show the toast before redirect
       toast({
         variant: "success",
         title: "Login Successful",
@@ -252,7 +247,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       
       const docResult = await ensureUserDocument(newUser.uid, referralCode);
 
-      // Manually fetch data right after signup to ensure context is updated before redirect
       await fetchData(newUser.uid);
 
        toast({
@@ -342,9 +336,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
        toast({ variant: "destructive", title: "Bet Failed", description: result.message });
     }
 
-    // No need to call fetchData() here for wallet balance because the listener on user bets will trigger UI updates
-    // And wallet balance is deducted server-side, and user doc changes should also be listened to if needed.
-    // However, to keep it simple and ensure other data like all-bets history is updated, we can leave it.
     await fetchData();
     return result;
   };

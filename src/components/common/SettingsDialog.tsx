@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -11,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
-import { Moon, Sun, Shield, Volume2, VolumeX, Lock, Loader2 } from "lucide-react";
+import { Moon, Sun, Shield, Volume2, VolumeX, Lock, Loader2, Palette } from "lucide-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +22,7 @@ import { Input } from "../ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "../ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -28,14 +30,12 @@ interface SettingsDialogProps {
 }
 
 const passwordFormSchema = z.object({
-  // We can't validate the current password here, so we just check for presence.
-  // The re-authentication on the client will handle the actual validation.
   currentPassword: z.string().min(1, "Current password is required."),
   newPassword: z.string().min(6, "New password must be at least 6 characters."),
   confirmPassword: z.string()
 }).refine(data => data.newPassword === data.confirmPassword, {
   message: "Passwords do not match",
-  path: ["confirmPassword"], // path of error
+  path: ["confirmPassword"],
 });
 
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
@@ -43,6 +43,8 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
   const { 
+    theme,
+    setTheme,
     isUserAdmin, 
     viewAsAdmin, 
     setViewAsAdmin, 
@@ -71,12 +73,15 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
         title: "Success",
         description: result.message
       });
-      form.reset(); // Clear form on success
-    } else {
-        // Error toast is handled in AppContext, but you could add more specific ones here if needed
+      form.reset();
     }
     setIsPasswordLoading(false);
   };
+  
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+      setTheme(newTheme);
+      // Removed onOpenChange(false) to allow user to see the change
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -89,7 +94,36 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
         <ScrollArea className="flex-grow pr-6 -mr-6">
         <div className="py-4 space-y-6">
-            {/* Theme selection is removed */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-medium flex items-center gap-2"><Palette /> Appearance</h3>
+                 <RadioGroup
+                    value={theme}
+                    onValueChange={handleThemeChange}
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    <div>
+                      <RadioGroupItem value="light" id="light" className="peer sr-only" />
+                      <Label
+                        htmlFor="light"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                      >
+                        <Sun className="mb-3 h-6 w-6" />
+                        Light
+                      </Label>
+                    </div>
+                    <div>
+                      <RadioGroupItem value="dark" id="dark" className="peer sr-only" />
+                      <Label
+                        htmlFor="dark"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                      >
+                        <Moon className="mb-3 h-6 w-6" />
+                        Dark
+                      </Label>
+                    </div>
+                  </RadioGroup>
+              </div>
+            <Separator />
             <div className="space-y-4">
                 <h3 className="text-sm font-medium">Audio</h3>
                    <div className="flex items-center justify-between">
