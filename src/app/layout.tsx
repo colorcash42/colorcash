@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { Toaster } from "@/components/ui/toaster";
 import { ClientWrapper } from "@/components/common/ClientWrapper";
+import { Footer } from "@/components/common/Footer";
 
 export const metadata: Metadata = {
   title: "ColorCash",
@@ -33,10 +34,13 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body className="flex flex-col min-h-screen">
         <AppProvider>
           <ClientWrapper>
-            {children}
+            <div className="flex-grow">
+              {children}
+            </div>
+            <Footer />
             <Toaster />
           </ClientWrapper>
         </AppProvider>
