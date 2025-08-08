@@ -27,6 +27,8 @@ import {
   placeFourColorBetAction,
   startFourColorRoundAction,
   endFourColorRoundAction,
+  updateUserPresence, // For presence tracking
+  getAllUsers, // For admin
 } from "@/app/actions";
 import { doc, onSnapshot, Timestamp, collection, query, where } from "firebase/firestore";
 
@@ -60,6 +62,7 @@ const serializeObject = (obj: any): any => {
 interface AppContextType {
   user: User | null;
   userData: UserData | null;
+  allUsers: UserData[]; // For Admin
   isLoggedIn: boolean;
   isLoading: boolean;
   walletBalance: number;
@@ -87,7 +90,8 @@ interface AppContextType {
   getGuruSuggestion: () => Promise<string | undefined>;
   changePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string; }>;
   sendPasswordReset: (email: string) => Promise<boolean>;
-  fetchData: (uid?: string) => Promise<void>; 
+  fetchData: (uid?: string) => Promise<void>;
+  fetchAllUsers: () => Promise<void>;
   startFourColorRound: () => Promise<void>;
   endFourColorRound: (winningColor: FourColorBetType) => Promise<void>;
 }
@@ -97,6 +101,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [allUsers, setAllUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -112,6 +117,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const prevRoundStatusRef = useRef<string | null>(null);
 
   const isUserAdmin = user ? ADMIN_UIDS.includes(user.uid) : false;
+
+  const fetchAllUsers = useCallback(async () => {
+    if (isUserAdmin) {
+        const { users } = await getAllUsers();
+        setAllUsers(users);
+    }
+  }, [isUserAdmin]);
 
   const fetchData = useCallback(async (uid?: string) => {
     const currentUid = uid || user?.uid;
@@ -135,14 +147,38 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setBets(betsRes.bets);
         setTransactions(transactionsRes.transactions);
         setPendingTransactions(pendingTransRes.transactions);
+
+        if (isAdmin) {
+           await fetchAllUsers();
+        }
     }
-  }, [user?.uid]);
+  }, [user?.uid, fetchAllUsers]);
+
+  // Presence update effect
+  useEffect(() => {
+    let presenceInterval: NodeJS.Timeout;
+    if (user) {
+        // Update presence immediately on load and then every minute
+        updateUserPresence(user.uid);
+        presenceInterval = setInterval(() => {
+            updateUserPresence(user.uid);
+        }, 60 * 1000); // 60 seconds
+    }
+    return () => {
+        if (presenceInterval) {
+            clearInterval(presenceInterval);
+        }
+    };
+  }, [user]);
+
 
   useEffect(() => {
     // Restore theme from localStorage
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
+    } else {
+      setThemeState('light');
     }
     
     const storedSound = localStorage.getItem("soundEnabled");
@@ -491,6 +527,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     userData,
+    allUsers,
     isLoggedIn,
     isLoading,
     walletBalance,
@@ -512,6 +549,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     changePassword,
     sendPasswordReset,
     fetchData,
+    fetchAllUsers,
     theme,
     setTheme,
     isUserAdmin,

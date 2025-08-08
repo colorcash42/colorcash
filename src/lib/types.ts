@@ -68,4 +68,5 @@ export type UserData = {
     referredBy: string | null;
     successfulReferrals: number;
     referralEarnings: number;
+    lastSeen: string | Timestamp; // For presence tracking
 }

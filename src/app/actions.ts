@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { Bet, Transaction, LiveGameRound, LiveBet, UserData } from "@/lib/types";
@@ -67,6 +68,7 @@ export async function ensureUserDocument(userId: string, referralCode?: string):
         referredBy: referredByUser ? referredByUser.id : null,
         successfulReferrals: 0,
         referralEarnings: 0,
+        lastSeen: serverTimestamp() as Timestamp,
     };
     batch.set(userDocRef, newUser);
 
@@ -656,5 +658,32 @@ export async function changePasswordAction(uid: string, newPassword: string): Pr
     } catch(e: any) {
         console.error("changePasswordAction failed: ", e);
         return { success: false, message: e.message || "An error occurred while changing the password." };
+    }
+}
+
+// --- PRESENCE ACTIONS ---
+export async function updateUserPresence(userId: string) {
+    if (!userId) return;
+    const userDocRef = doc(db, "users", userId);
+    try {
+        await updateDoc(userDocRef, {
+            lastSeen: serverTimestamp(),
+        });
+    } catch (error) {
+        // It's okay if this fails silently, not critical for user experience
+        console.log(`Failed to update presence for user ${userId}:`, error);
+    }
+}
+
+export async function getAllUsers(): Promise<{ users: UserData[] }> {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, orderBy("lastSeen", "desc"));
+        const querySnapshot = await getDocs(q);
+        const users = querySnapshot.docs.map(doc => serializeObject({ ...doc.data() }) as UserData);
+        return { users };
+    } catch (error) {
+        console.error("Error getting all users:", error);
+        return { users: [] };
     }
 }
