@@ -213,11 +213,16 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
             let winningColor = '';
             let winningSize = '';
+            
+            // Correctly define winning colors
+            const greenNumbers = [1, 3, 7, 9];
+            const redNumbers = [2, 4, 6, 8];
+            const violetNumbers = [0, 5];
 
             // Determine Winning Color
-            if ([1, 3, 7, 9].includes(winningNumber)) {
+            if (greenNumbers.includes(winningNumber)) {
                 winningColor = 'Green';
-            } else if ([2, 4, 6, 8].includes(winningNumber)) {
+            } else if (redNumbers.includes(winningNumber)) {
                 winningColor = 'Red';
             } else if (winningNumber === 0) {
                 winningColor = 'VioletRed'; // Red + Violet
@@ -226,21 +231,17 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             }
 
             // Determine Winning Size
-            if (winningNumber >= 5 && winningNumber <= 9) {
-                winningSize = 'Big';
-            } else if (winningNumber >= 0 && winningNumber <= 4) {
-                winningSize = 'Small';
-            }
+            winningSize = winningNumber >= 5 ? 'Big' : 'Small';
 
             let isWin = false;
             let payoutRate = 0;
 
             if (betType === 'color') {
-                if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
+                if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) {
                     isWin = true;
                 } else if (betValue === 'Red' && (winningColor === 'Red' || winningColor === 'VioletRed')) {
                     isWin = true;
-                } else if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) {
+                } else if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
                     isWin = true;
                 }
             } else if (betType === 'number') {
@@ -287,6 +288,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
         });
 
         revalidatePath('/dashboard');
+        revalidatePath('/games/color-cash');
 
         return { 
             success: true, 
@@ -327,6 +329,7 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
             const isWinningNumberEven = winningNumber % 2 === 0;
 
             let isWin = false;
+            // Corrected winning condition
             if ((betValue === 'Even' && isWinningNumberEven) || (betValue === 'Odd' && !isWinningNumberEven)) {
                 isWin = true;
             }
@@ -352,6 +355,7 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
         });
 
         revalidatePath('/dashboard');
+        revalidatePath('/games/odd-even');
 
         return { 
             success: true, 
@@ -460,12 +464,12 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
             if (newStatus === 'approved') {
                 const currentBalance = userDoc.data().walletBalance;
                 if (transData.type === 'deposit') {
-                    transaction.update(userDocRef, { walletBalance: currentBalance + transData.amount });
+                    transaction.update(userDocRef, { walletBalance: increment(transData.amount) });
                 } else if (transData.type === 'withdrawal') {
                      if (transData.amount > currentBalance) {
                         throw "User has insufficient balance for this withdrawal."
                     }
-                    transaction.update(userDocRef, { walletBalance: currentBalance - transData.amount });
+                    transaction.update(userDocRef, { walletBalance: increment(-transData.amount) });
                 }
             }
         });
@@ -687,3 +691,5 @@ export async function getAllUsers(): Promise<{ users: UserData[] }> {
         return { users: [] };
     }
 }
+
+    
