@@ -87,7 +87,7 @@ interface AppContextType {
   getGuruSuggestion: () => Promise<string | undefined>;
   changePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string; }>;
   sendPasswordReset: (email: string) => Promise<boolean>;
-  fetchData: () => Promise<void>; 
+  fetchData: (uid?: string) => Promise<void>; 
   startFourColorRound: () => Promise<void>;
   endFourColorRound: (winningColor: FourColorBetType) => Promise<void>;
 }
@@ -117,10 +117,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (currentUid) {
         const isAdmin = ADMIN_UIDS.includes(currentUid);
 
-        const [userDataRes, betsRes, transactionsRes] = await Promise.all([
+        // Fetch user data and transactions in parallel.
+        const [userDataRes, betsRes, transactionsRes, pendingTransRes] = await Promise.all([
             getUserData(currentUid),
             getBets(currentUid),
             getTransactions(currentUid),
+            isAdmin ? getPendingTransactions() : Promise.resolve({ transactions: [] }),
         ]);
         
         const fullUserData = userDataRes.userData;
@@ -131,55 +133,50 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         setBets(betsRes.bets);
         setTransactions(transactionsRes.transactions);
-
-        if (isAdmin) {
-            const pendingTransRes = await getPendingTransactions();
-            setPendingTransactions(pendingTransRes.transactions);
-        } else {
-            setPendingTransactions([]);
-        }
+        setPendingTransactions(pendingTransRes.transactions);
     }
   }, [user?.uid]);
 
   useEffect(() => {
+    // Restore theme and sound settings from localStorage
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
+      document.body.classList.add(storedTheme);
+    } else {
+      document.body.classList.add('light');
     }
     
-     const storedSound = localStorage.getItem("soundEnabled");
-    if (storedSound) {
+    const storedSound = localStorage.getItem("soundEnabled");
+    if (storedSound !== null) {
       setSoundEnabledState(JSON.parse(storedSound));
     }
-    
+
+    // Auth state listener
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsLoading(false);
       if (currentUser) {
         fetchData(currentUser.uid);
       }
+      setIsLoading(false);
     });
     
+    // Live game status listener
     const liveStatusRef = doc(db, "liveGameStatus", "current");
     const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
-        if (doc.exists()) {
-            const roundData = serializeObject(doc.data()) as LiveGameRound;
-            setLiveGameRound(roundData);
-        } else {
-            setLiveGameRound(null);
-        }
+        setLiveGameRound(doc.exists() ? serializeObject(doc.data()) as LiveGameRound : null);
     }, (error) => {
         console.error("Live game listener failed:", error);
         setLiveGameRound(null);
     });
 
-
     return () => {
         unsubscribeAuth();
         unsubscribeLiveGame();
     };
-  }, []);
+  }, [fetchData]);
 
+  // Listener for user-specific live bets for the current round
   useEffect(() => {
     if (user && liveGameRound) {
         const betsRef = collection(db, "bets");
@@ -200,8 +197,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [user, liveGameRound]);
 
   const setTheme = (theme: Theme) => {
+    // Update state
     setThemeState(theme);
+    // Update localStorage
     localStorage.setItem("theme", theme);
+    // Update body class
+    document.body.classList.remove("light", "dark");
+    document.body.classList.add(theme);
   };
   
   const setSoundEnabled = (enabled: boolean) => {
@@ -210,13 +212,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const isLoggedIn = user !== null;
-
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchData();
-    }
-  }, [isLoggedIn, fetchData]);
 
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
@@ -227,6 +222,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         title: "Login Successful",
         description: "Welcome back!",
       });
+      // Auth listener will handle fetching data and redirecting.
       router.push("/dashboard");
     } catch (error: any) {
       toast({
@@ -246,10 +242,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const newUser = userCredential.user;
       
       const docResult = await ensureUserDocument(newUser.uid, referralCode);
-
-      await fetchData(newUser.uid);
-
-       toast({
+      
+      // Auth listener will fetch data.
+      toast({
         variant: "success",
         title: "Account Created!",
         description: docResult.message,
@@ -266,7 +261,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
     }
   };
-
 
   const logout = async () => {
     await signOut(auth);
@@ -290,15 +284,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
     const result = await placeBetAction(user.uid, amount, betType, betValue);
     
-    if (!result.success) {
+    if (result.success) {
+        await fetchData(user.uid);
+    } else {
       toast({
         variant: "destructive",
         title: "Bet Failed",
         description: result.message,
       });
     }
-
-    await fetchData();
     return result;
   };
   
@@ -310,15 +304,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
     const result = await placeOddEvenBetAction(user.uid, amount, betValue);
     
-    if (!result.success) {
+    if (result.success) {
+      await fetchData(user.uid);
+    } else {
       toast({
         variant: "destructive",
         title: "Bet Failed",
         description: result.message,
       });
     }
-
-    await fetchData();
     return result;
   };
   
@@ -332,11 +326,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     if (result.success) {
        toast({ title: "Bet Placed!", description: result.message });
+       await fetchData(user.uid);
     } else {
        toast({ variant: "destructive", title: "Bet Failed", description: result.message });
     }
-
-    await fetchData();
     return result;
   };
 
@@ -348,6 +341,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             title: 'Deposit Request Submitted',
             description: result.message
         });
+        await fetchData(user.uid);
     } else {
         toast({
             variant: 'destructive',
@@ -355,7 +349,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData(); 
   };
 
   const requestWithdrawal = async (amount: number, upi: string) => {
@@ -366,6 +359,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             title: 'Withdrawal Request Submitted',
             description: result.message
         });
+        await fetchData(user.uid);
     } else {
         toast({
             variant: 'destructive',
@@ -373,11 +367,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData();
   };
 
   const handleTransaction = async (transactionId: string, newStatus: 'approved' | 'rejected') => {
-    if (!isUserAdmin) {
+    if (!isUserAdmin || !user) {
         toast({variant: 'destructive', title: 'Permission Denied'});
         return;
     }
@@ -388,6 +381,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             title: `Transaction ${newStatus}`,
             description: result.message
         });
+        await fetchData(user.uid);
     } else {
         toast({
             variant: 'destructive',
@@ -395,7 +389,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             description: result.message
         });
     }
-    await fetchData();
   };
   
   const getGuruSuggestion = async () => {
