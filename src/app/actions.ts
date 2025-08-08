@@ -184,12 +184,26 @@ export async function getTransactions(userId: string) {
 }
 
 // This is an admin function, so it doesn't need userId from client
-export async function getPendingTransactions() {
+export async function getPendingTransactions(): Promise<{ transactions: Transaction[] }> {
     const globalTransactionsCollectionRef = collection(db, "transactions");
     const q = query(globalTransactionsCollectionRef, where("status", "==", "pending"), orderBy("timestamp", "desc"));
     const querySnapshot = await getDocs(q);
-    // Serialize each document before returning
-    const transactions = querySnapshot.docs.map(doc => serializeObject({ id: doc.id, ...doc.data() }) as Transaction);
+
+    // Fetch user emails for convenience
+    const transactions = await Promise.all(
+        querySnapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data() as Transaction;
+            try {
+                const userRecord = await getAuth(app).getUser(data.userId);
+                data.email = userRecord.email;
+            } catch (error) {
+                console.warn(`Could not fetch email for user ${data.userId}:`, error);
+                data.email = "N/A";
+            }
+            return serializeObject({ id: docSnap.id, ...data }) as Transaction;
+        })
+    );
+    
     return { transactions };
 }
 
@@ -249,17 +263,14 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             let winningColor = '';
             let winningSize = '';
             
-            const greenNumbers = [1, 3, 7, 9];
-            const redNumbers = [2, 4, 6, 8];
-            if (greenNumbers.includes(winningNumber)) {
-                winningColor = 'Green';
-            } else if (redNumbers.includes(winningNumber)) {
-                winningColor = 'Red';
-            } else if (winningNumber === 0) {
-                winningColor = 'VioletRed';
-            } else if (winningNumber === 5) {
-                winningColor = 'VioletGreen';
-            }
+            const greenNumbers = [1, 3, 7, 9, 5]; // 5 is now Green + Violet
+            const redNumbers = [2, 4, 6, 8, 0];   // 0 is now Red + Violet
+
+            if (greenNumbers.includes(winningNumber)) winningColor = 'Green';
+            if (redNumbers.includes(winningNumber)) winningColor = 'Red';
+            if (winningNumber === 0) winningColor = 'VioletRed';
+            if (winningNumber === 5) winningColor = 'VioletGreen';
+
             winningSize = winningNumber >= 5 ? 'Big' : 'Small';
 
             let isWin = false;
@@ -270,15 +281,23 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                 if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) isWin = true;
                 else if (betValue === 'Red' && (winningColor === 'Red' || winningColor === 'VioletRed')) isWin = true;
                 else if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) isWin = true;
-            } else if (betType === 'number' && typeof betValue === 'number' && winningNumber === betValue) {
+            } else if (betType === 'number' && Number(betValue) === winningNumber) { // Ensure betValue is treated as a number
                 isWin = true;
             } else if (betType === 'trio' && trioMap[betValue as string]?.includes(winningNumber)) {
                 isWin = true;
-            } else if (betType === 'size' && winningSize === betValue) {
-                isWin = true;
+            } else if (betType === 'size') {
+                if(winningNumber !== 0 && winningNumber !== 5) { // Size bets don't win on 0 or 5
+                    if(winningSize === betValue) isWin = true;
+                }
             }
             
-            if (isWin) payoutRate = 1.9;
+            // Set payout rates
+            if(isWin) {
+                if(betType === 'number') payoutRate = 9;
+                else if(betType === 'color' && betValue === 'Violet') payoutRate = 4.5;
+                else payoutRate = 1.9; // Standard payout
+            }
+            
             const payout = isWin ? amount * payoutRate : 0;
             
             transaction.update(userDocRef, {
@@ -651,7 +670,21 @@ export async function getAllUsers(): Promise<{ users: UserData[] }> {
         const usersRef = collection(db, "users");
         const q = query(usersRef, orderBy("lastSeen", "desc"));
         const querySnapshot = await getDocs(q);
-        const users = querySnapshot.docs.map(doc => serializeObject({ ...doc.data() }) as UserData);
+
+        // Enhance with email from Auth
+        const users = await Promise.all(
+            querySnapshot.docs.map(async (docSnap) => {
+                const data = docSnap.data() as UserData;
+                try {
+                    const userRecord = await getAuth(app).getUser(data.uid);
+                    data.email = userRecord.email;
+                } catch (error) {
+                    console.warn(`Could not fetch email for user ${data.uid}:`, error);
+                    data.email = "N/A";
+                }
+                return serializeObject(data) as UserData;
+            })
+        );
         return { users };
     } catch (error) {
         console.error("Error getting all users:", error);

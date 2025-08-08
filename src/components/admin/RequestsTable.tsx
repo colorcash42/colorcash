@@ -61,8 +61,8 @@ export function RequestsTable({ type }: { type: 'deposit' | 'withdrawal' }) {
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
+              <TableHead>User Email</TableHead>
               <TableHead className="hidden md:table-cell">User ID</TableHead>
-              <TableHead>Type</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Details</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -79,10 +79,8 @@ export function RequestsTable({ type }: { type: 'deposit' | 'withdrawal' }) {
               sortedTransactions.map((t: Transaction) => (
                 <TableRow key={t.id}>
                   <TableCell>{t.timestamp ? format(toDate(t.timestamp), 'PP pp') : 'No date'}</TableCell>
+                  <TableCell className="font-medium">{t.email || 'N/A'}</TableCell>
                   <TableCell className="hidden md:table-cell truncate max-w-xs">{t.userId}</TableCell>
-                  <TableCell>
-                    <Badge variant={t.type === 'deposit' ? 'default' : 'secondary'}>{t.type}</Badge>
-                  </TableCell>
                   <TableCell>₹{t.amount.toFixed(2)}</TableCell>
                   <TableCell className="truncate max-w-xs">
                     {t.type === 'deposit' ? `UTR: ${t.utr}` : `UPI: ${t.upi}`}

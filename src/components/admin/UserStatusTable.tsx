@@ -66,7 +66,8 @@ export function UserStatusTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User ID</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead className="hidden md:table-cell">User ID</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Seen</TableHead>
               <TableHead className="text-right">Total Balance</TableHead>
@@ -76,14 +77,15 @@ export function UserStatusTable() {
           <TableBody>
             {allUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No users found.
                 </TableCell>
               </TableRow>
             ) : (
               allUsers.map((user: UserData) => (
                 <TableRow key={user.uid}>
-                  <TableCell className="truncate max-w-[120px] sm:max-w-xs">{user.uid}</TableCell>
+                  <TableCell className="font-medium">{user.email || 'N/A'}</TableCell>
+                  <TableCell className="hidden md:table-cell truncate max-w-[120px]">{user.uid}</TableCell>
                    <TableCell>
                     {isOnline(user.lastSeen) ? (
                         <Badge><span className="relative flex h-2 w-2 rounded-full bg-green-500 mr-2"></span>Online</Badge>

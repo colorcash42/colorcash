@@ -20,6 +20,7 @@ export type Transaction = {
   utr?: string;
   upi?: string;
   userId: string;
+  email?: string; // Added for admin convenience
   timestamp: string; // Changed from Date | FieldValue to string for serialization
   userTransactionId?: string; // ID of the transaction doc in the user's subcollection
 };
@@ -63,6 +64,7 @@ export type LiveBet = {
 // User data, including referral information and separated wallet balances
 export type UserData = {
     uid: string;
+    email?: string; // Added for admin convenience
     depositBalance: number; // Money deposited by user
     winningsBalance: number; // Money won from games, withdrawable
     bonusBalance: number; // Signup and referral bonuses, not withdrawable
