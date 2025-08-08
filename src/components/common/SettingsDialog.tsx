@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
 import { Moon, Sun, Shield, Volume2, VolumeX, Lock, Loader2 } from "lucide-react";
@@ -44,8 +43,6 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
   const { 
-    theme, 
-    setTheme, 
     isUserAdmin, 
     viewAsAdmin, 
     setViewAsAdmin, 
@@ -81,11 +78,6 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
     setIsPasswordLoading(false);
   };
 
-  const handleThemeChange = (value: string) => {
-    setTheme(value as any);
-    onOpenChange(false);
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] flex flex-col">
@@ -97,24 +89,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
         <ScrollArea className="flex-grow pr-6 -mr-6">
         <div className="py-4 space-y-6">
-            <div className="space-y-2">
-                <Label>Theme</Label>
-                <RadioGroup value={theme} onValueChange={handleThemeChange} className="grid grid-cols-2 sm:grid-cols-2 gap-2">
-                    <Label className="p-2 border rounded-md has-[:checked]:border-primary flex flex-col items-center justify-center cursor-pointer">
-                        <RadioGroupItem value="light" id="light" className="sr-only" />
-                        <Sun className="h-6 w-6 mb-1"/>
-                        <span className="text-xs">Light</span>
-                    </Label>
-                    <Label className="p-2 border rounded-md has-[:checked]:border-primary flex flex-col items-center justify-center cursor-pointer">
-                        <RadioGroupItem value="dark" id="dark" className="sr-only" />
-                        <Moon className="h-6 w-6 mb-1"/>
-                        <span className="text-xs">Dark</span>
-                    </Label>
-                </RadioGroup>
-            </div>
-
-            <Separator />
-
+            {/* Theme selection is removed */}
             <div className="space-y-4">
                 <h3 className="text-sm font-medium">Audio</h3>
                    <div className="flex items-center justify-between">

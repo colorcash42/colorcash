@@ -104,7 +104,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [liveGameRound, setLiveGameRound] = useState<LiveGameRound | null>(null);
   const [userLiveBets, setUserLiveBets] = useState<LiveBet[]>([]);
-  const [theme, setThemeState] = useState<Theme>('dark');
+  const [theme, setThemeState] = useState<Theme>('light'); // Always default to light
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const { toast } = useToast();
@@ -144,10 +144,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.uid]);
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem("theme") as Theme | null;
-    if (storedTheme) {
-      setThemeState(storedTheme);
-    }
+    // No longer need to check local storage for theme
+    setThemeState('light');
+    
      const storedSound = localStorage.getItem("soundEnabled");
     if (storedSound) {
       setSoundEnabledState(JSON.parse(storedSound));
@@ -204,9 +203,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, liveGameRound]);
 
+  // This function no longer needs to do anything but satisfies the type
   const setTheme = (theme: Theme) => {
-    setThemeState(theme);
-    localStorage.setItem("theme", theme);
+    // Dark theme is removed, so this function is effectively disabled.
   };
   
   const setSoundEnabled = (enabled: boolean) => {

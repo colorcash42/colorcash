@@ -1,10 +1,8 @@
 "use client";
 
-import { useAppContext } from "@/context/AppContext";
-import { cn } from "@/lib/utils";
-
-// This wrapper is a client component and can safely use the context.
+// This component is no longer needed as we are removing the dark theme.
+// The theme class was the only thing it was doing.
+// Keeping the file to avoid breaking imports, but it does nothing.
 export function ClientWrapper({ children }: { children: React.ReactNode }) {
-  const { theme } = useAppContext();
-  return <div className={cn(theme)}>{children}</div>;
+  return <>{children}</>;
 }
