@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { CircleDollarSign, Loader2, Mail, UserPlus } from "lucide-react";
+import { CircleDollarSign, Loader2, Mail, UserPlus, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,6 +160,10 @@ function SignupForm() {
              <div className="space-y-2">
                 <Label htmlFor="referral-code">Referral Code (Optional)</Label>
                 <Input id="referral-code" type="text" placeholder="Enter friend's code" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} />
+            </div>
+             <div className="p-4 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-md text-center text-sm flex items-center gap-2">
+                <Mail className="h-5 w-5 shrink-0" />
+                <p>After signing up, please check your email to verify your account.</p>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (

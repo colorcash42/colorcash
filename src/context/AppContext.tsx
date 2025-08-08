@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail } from "firebase/auth";
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import type { Bet, Transaction, UserData, LiveGameRound, LiveBet } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -199,9 +199,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const liveStatusRef = doc(db, "liveGameStatus", "current");
     const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
         const newRound = doc.exists() ? serializeObject(doc.data()) as LiveGameRound : null;
-        setLiveGameRound(newRound);
-        
-        // --- REAL-TIME UPDATE LOGIC ---
+
         // If the round just finished (status changed from 'betting' to 'awarding'),
         // we immediately refetch all user data to get updated wallet and bet history.
         if (prevRoundStatusRef.current === 'betting' && newRound?.status === 'awarding') {
@@ -209,6 +207,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               fetchData(user.uid);
             }
         }
+        
+        setLiveGameRound(newRound);
         prevRoundStatusRef.current = newRound?.status ?? null;
         
     }, (error) => {
@@ -257,19 +257,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const loggedInUser = userCredential.user;
+
+      if (!loggedInUser.emailVerified) {
+        toast({
+          variant: "destructive",
+          title: "Email Not Verified",
+          description: "Please check your email and click the verification link before logging in.",
+        });
+        await signOut(auth); // Sign out the user
+        setIsLoading(false);
+        return;
+      }
+      
       toast({
         variant: "success",
         title: "Login Successful",
         description: "Welcome back!",
       });
-      // Auth listener will handle fetching data and redirecting.
+      // Auth listener will handle fetching data.
       router.push("/dashboard");
     } catch (error: any) {
+      let message = "An unknown error occurred.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = "Invalid email or password.";
+      }
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message,
+        description: message,
       });
     } finally {
         setIsLoading(false);
@@ -282,21 +299,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const newUser = userCredential.user;
       
+      // Send verification email
+      await sendEmailVerification(newUser);
+
+      // Create user document in Firestore
       const docResult = await ensureUserDocument(newUser.uid, referralCode);
       
-      // Auth listener will fetch data.
+      // Sign out the user so they have to verify their email before logging in
+      await signOut(auth);
+
       toast({
         variant: "success",
-        title: "Account Created!",
-        description: docResult.message,
+        title: "Verification Email Sent!",
+        description: `Please check your email to verify your account. ${docResult.message}`,
       });
-      router.push("/dashboard");
+      
+      // Don't redirect, keep them on the login page.
+      // router.push("/dashboard");
 
     } catch (error: any) {
+      let message = "An unknown error occurred.";
+      if (error.code === 'auth/email-already-in-use') {
+          message = "This email address is already in use.";
+      } else if (error.code === 'auth/weak-password') {
+          message = "Password should be at least 6 characters.";
+      } else if (error.code === 'auth/invalid-email') {
+          message = "Please enter a valid email address.";
+      }
       toast({
         variant: "destructive",
         title: "Signup Failed",
-        description: error.message,
+        description: message,
       });
     } finally {
         setIsLoading(false);
