@@ -9,7 +9,7 @@ import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndP
 import { auth, db } from "@/lib/firebase";
 import type { Bet, Transaction, UserData, LiveGameRound, LiveBet } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { ADMIN_UIDS } from "@/lib/admins";
+import { ADMIN_UIDS, ADMIN_EMAILS } from "@/lib/admins";
 import { 
   getUserData,
   getBets, 
@@ -177,8 +177,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(storedTheme);
     } else {
       setThemeState('light');
+      document.documentElement.classList.add('light');
     }
     
     const storedSound = localStorage.getItem("soundEnabled");
@@ -245,6 +248,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem("theme", newTheme);
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(newTheme);
   };
   
   const setSoundEnabled = (enabled: boolean) => {
@@ -259,8 +264,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const loggedInUser = userCredential.user;
+      
+      const isExemptAdmin = ADMIN_EMAILS.includes(email);
 
-      if (!loggedInUser.emailVerified) {
+      if (!loggedInUser.emailVerified && !isExemptAdmin) {
         toast({
           variant: "destructive",
           title: "Email Not Verified",
@@ -312,6 +319,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         variant: "success",
         title: "Verification Email Sent!",
         description: `Please check your email to verify your account. ${docResult.message}`,
+        duration: 9000,
       });
       
       // Don't redirect, keep them on the login page.

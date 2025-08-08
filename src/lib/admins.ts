@@ -6,3 +6,7 @@
 // export const ADMIN_UIDS = ["your-uid-1", "another-admin-uid-2"];
 
 export const ADMIN_UIDS = ["taKVGzVJWmUI8XH3l6K0ec1RLuw1"];
+
+// This is a list of admin emails that can bypass email verification for login.
+// This is a temporary solution to allow admins with unverified accounts to log in.
+export const ADMIN_EMAILS = ["rotiyanafoods@gmail.com"];
