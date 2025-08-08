@@ -63,7 +63,9 @@ export async function ensureUserDocument(userId: string, referralCode?: string):
 
     const newUser: UserData = {
         uid: userId,
-        walletBalance: signupBonus,
+        depositBalance: 0,
+        winningsBalance: 0,
+        bonusBalance: signupBonus,
         referralCode: `ref-${userId.substring(0, 6)}`,
         referredBy: referredByUser ? referredByUser.id : null,
         successfulReferrals: 0,
@@ -76,7 +78,7 @@ export async function ensureUserDocument(userId: string, referralCode?: string):
 
     if (referredByUser) {
         batch.update(referredByUser.ref, {
-            walletBalance: increment(referralReward),
+            bonusBalance: increment(referralReward),
             successfulReferrals: increment(1),
             referralEarnings: increment(referralReward)
         });
@@ -108,16 +110,27 @@ export async function getUserData(userId: string): Promise<{ userData: UserData 
 export async function getWalletBalance(userId: string) {
   const userDocRef = doc(db, "users", userId);
   const userDoc = await getDoc(userDocRef);
-  
+  let data;
+
   if (!userDoc.exists()) {
     await ensureUserDocument(userId);
     const newUserDoc = await getDoc(userDocRef);
-    const balance = newUserDoc.data()?.walletBalance ?? 0;
-    return { balance };
+    data = newUserDoc.data();
+  } else {
+    data = userDoc.data();
   }
-  
-  const balance = userDoc.data()?.walletBalance ?? 0;
-  return { balance };
+
+  const depositBalance = data?.depositBalance ?? 0;
+  const winningsBalance = data?.winningsBalance ?? 0;
+  const bonusBalance = data?.bonusBalance ?? 0;
+  const totalBalance = depositBalance + winningsBalance + bonusBalance;
+
+  return { 
+      total: totalBalance,
+      deposit: depositBalance,
+      winnings: winningsBalance,
+      bonus: bonusBalance,
+   };
 }
 
 export async function getBets(userId:string): Promise<{ bets: Bet[] }> {
@@ -192,6 +205,25 @@ interface ColorCashBetResult {
     winningSize: string;
 }
 
+const deductFromBalances = (amount: number, balances: { deposit: number; winnings: number; bonus: number }) => {
+    let remainingAmount = amount;
+    const deductions = { deposit: 0, winnings: 0, bonus: 0 };
+
+    // Priority: Deposit -> Winnings -> Bonus
+    const depositDeduct = Math.min(remainingAmount, balances.deposit);
+    deductions.deposit = depositDeduct;
+    remainingAmount -= depositDeduct;
+
+    const winningsDeduct = Math.min(remainingAmount, balances.winnings);
+    deductions.winnings = winningsDeduct;
+    remainingAmount -= winningsDeduct;
+
+    const bonusDeduct = Math.min(remainingAmount, balances.bonus);
+    deductions.bonus = bonusDeduct;
+    
+    return deductions;
+}
+
 export async function placeBetAction(userId: string, amount: number, betType: BetType, betValue: string | number): Promise<{ success: boolean; message: string; result?: ColorCashBetResult; }> {
     try {
         const userDocRef = doc(db, "users", userId);
@@ -199,88 +231,66 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
 
         const betResult = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
-            if (!userDoc.exists()) {
-                throw "User document does not exist!";
-            }
-            const currentBalance = userDoc.data().walletBalance;
-
-            if (amount > currentBalance) {
-                throw "Insufficient balance";
-            }
+            if (!userDoc.exists()) throw "User document does not exist!";
             
-            // --- FAIR GAME LOGIC ---
-            const winningNumber = Math.floor(Math.random() * 10); // 0-9. Fair for all bets.
+            const userData = userDoc.data() as UserData;
+            const currentBalances = {
+                deposit: userData.depositBalance ?? 0,
+                winnings: userData.winningsBalance ?? 0,
+                bonus: userData.bonusBalance ?? 0,
+            };
+            const totalBalance = currentBalances.deposit + currentBalances.winnings + currentBalances.bonus;
 
+            if (amount > totalBalance) throw "Insufficient balance";
+            
+            const deductions = deductFromBalances(amount, currentBalances);
+
+            const winningNumber = Math.floor(Math.random() * 10);
             let winningColor = '';
             let winningSize = '';
             
-            // Correctly define winning colors
             const greenNumbers = [1, 3, 7, 9];
             const redNumbers = [2, 4, 6, 8];
-            const violetNumbers = [0, 5];
-
-            // Determine Winning Color
             if (greenNumbers.includes(winningNumber)) {
                 winningColor = 'Green';
             } else if (redNumbers.includes(winningNumber)) {
                 winningColor = 'Red';
             } else if (winningNumber === 0) {
-                winningColor = 'VioletRed'; // Red + Violet
+                winningColor = 'VioletRed';
             } else if (winningNumber === 5) {
-                winningColor = 'VioletGreen'; // Green + Violet
+                winningColor = 'VioletGreen';
             }
-
-            // Determine Winning Size
             winningSize = winningNumber >= 5 ? 'Big' : 'Small';
 
             let isWin = false;
             let payoutRate = 0;
+            const trioMap: { [key: string]: number[] } = { 'trio1': [1, 4, 7], 'trio2': [2, 5, 8], 'trio3': [3, 6, 9] };
 
             if (betType === 'color') {
-                if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) {
-                    isWin = true;
-                } else if (betValue === 'Red' && (winningColor === 'Red' || winningColor === 'VioletRed')) {
-                    isWin = true;
-                } else if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
-                    isWin = true;
-                }
-            } else if (betType === 'number') {
-                 if (winningNumber === Number(betValue)) {
-                    isWin = true;
-                }
-            } else if (betType === 'trio') {
-                const trioMap: { [key: string]: number[] } = {
-                    'trio1': [1, 4, 7],
-                    'trio2': [2, 5, 8],
-                    'trio3': [3, 6, 9],
-                };
-                if (trioMap[betValue as string]?.includes(winningNumber)) {
-                    isWin = true;
-                }
-            } else if (betType === 'size') {
-                if (winningSize === betValue) {
-                    isWin = true;
-                }
+                if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) isWin = true;
+                else if (betValue === 'Red' && (winningColor === 'Red' || winningColor === 'VioletRed')) isWin = true;
+                else if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) isWin = true;
+            } else if (betType === 'number' && typeof betValue === 'number' && winningNumber === betValue) {
+                isWin = true;
+            } else if (betType === 'trio' && trioMap[betValue as string]?.includes(winningNumber)) {
+                isWin = true;
+            } else if (betType === 'size' && winningSize === betValue) {
+                isWin = true;
             }
-            // --- END GAME LOGIC ---
             
-            if (isWin) {
-                payoutRate = 1.9; // Set all winning payouts to 1.9x for a house edge
-            }
-
+            if (isWin) payoutRate = 1.9;
             const payout = isWin ? amount * payoutRate : 0;
-            const newBalance = currentBalance - amount + payout;
-
-            transaction.update(userDocRef, { walletBalance: newBalance });
+            
+            transaction.update(userDocRef, {
+                depositBalance: increment(-deductions.deposit),
+                winningsBalance: increment(-deductions.winnings + payout), // Winnings go to winningsBalance
+                bonusBalance: increment(-deductions.bonus),
+            });
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
-                gameId: 'colorcash',
-                betType,
-                betValue,
-                amount,
-                outcome: isWin ? "win" : "loss",
-                payout,
+                gameId: 'colorcash', betType, betValue, amount,
+                outcome: isWin ? "win" : "loss", payout,
                 timestamp: serverTimestamp(),
             });
             
@@ -291,22 +301,16 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
         revalidatePath('/games/color-cash');
 
         return { 
-            success: true, 
-            result: { ...betResult },
+            success: true, result: { ...betResult },
             message: betResult.isWin ? `You won ₹${betResult.payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
         };
-
     } catch (e: any) {
         console.error("placeBetAction failed: ", e);
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
     }
 }
 
-interface OddEvenBetResult {
-    isWin: boolean;
-    payout: number;
-    winningNumber: number;
-}
+interface OddEvenBetResult { isWin: boolean; payout: number; winningNumber: number; }
 
 export async function placeOddEvenBetAction(userId: string, amount: number, betValue: 'Odd' | 'Even'): Promise<{ success: boolean; message: string; result?: OddEvenBetResult; }> {
     try {
@@ -315,39 +319,37 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
 
         const betResult = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
-            if (!userDoc.exists()) {
-                throw "User document does not exist!";
-            }
-            const currentBalance = userDoc.data().walletBalance;
-
-            if (amount > currentBalance) {
-                throw "Insufficient balance";
-            }
+            if (!userDoc.exists()) throw "User document does not exist!";
             
-            // --- FAIR GAME LOGIC ---
-            const winningNumber = Math.floor(Math.random() * 6) + 1; // 1-6
+            const userData = userDoc.data() as UserData;
+            const currentBalances = {
+                deposit: userData.depositBalance ?? 0,
+                winnings: userData.winningsBalance ?? 0,
+                bonus: userData.bonusBalance ?? 0,
+            };
+            const totalBalance = currentBalances.deposit + currentBalances.winnings + currentBalances.bonus;
+
+            if (amount > totalBalance) throw "Insufficient balance";
+            
+            const deductions = deductFromBalances(amount, currentBalances);
+
+            const winningNumber = Math.floor(Math.random() * 6) + 1;
             const isWinningNumberEven = winningNumber % 2 === 0;
-
-            let isWin = false;
-            // Corrected winning condition
-            if ((betValue === 'Even' && isWinningNumberEven) || (betValue === 'Odd' && !isWinningNumberEven)) {
-                isWin = true;
-            }
+            let isWin = (betValue === 'Even' && isWinningNumberEven) || (betValue === 'Odd' && !isWinningNumberEven);
             
-            const payoutRate = 1.9; // Set payout to 1.9x for a house edge
+            const payoutRate = 1.9;
             const payout = isWin ? amount * payoutRate : 0;
-            const newBalance = currentBalance - amount + payout;
 
-            transaction.update(userDocRef, { walletBalance: newBalance });
+            transaction.update(userDocRef, {
+                depositBalance: increment(-deductions.deposit),
+                winningsBalance: increment(-deductions.winnings + payout),
+                bonusBalance: increment(-deductions.bonus),
+            });
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
-                gameId: 'oddeven',
-                betType: 'oddOrEven',
-                betValue,
-                amount,
-                outcome: isWin ? "win" : "loss",
-                payout,
+                gameId: 'oddeven', betType: 'oddOrEven', betValue, amount,
+                outcome: isWin ? "win" : "loss", payout,
                 timestamp: serverTimestamp(),
             });
             
@@ -358,38 +360,31 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
         revalidatePath('/games/odd-even');
 
         return { 
-            success: true, 
-            result: { ...betResult },
+            success: true, result: { ...betResult },
             message: betResult.isWin ? `You won ₹${betResult.payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
         };
-
     } catch (e: any) {
         console.error("placeOddEvenBetAction failed: ", e);
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
     }
 }
 
-
 export async function requestDepositAction(userId: string, amount: number, utr: string) {
+    const userDocRef = doc(db, "users", userId);
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
     const globalTransactionsCollectionRef = collection(db, "transactions");
 
     const newTransaction: Omit<Transaction, "id" | "timestamp"> & { timestamp: any } = {
-        type: 'deposit',
-        amount,
-        status: 'pending',
-        utr,
-        userId: userId, // Store userId for admin handling
+        type: 'deposit', amount, status: 'pending', utr, userId,
         timestamp: serverTimestamp(),
     };
     
-    // Add to user-specific and global collections using auto-generated IDs
     const userTransactionDocRef = doc(transactionsCollectionRef);
     const globalDocRef = doc(globalTransactionsCollectionRef);
 
     const batch = writeBatch(db);
     batch.set(userTransactionDocRef, newTransaction);
-    batch.set(globalDocRef, { ...newTransaction, userTransactionId: userTransactionDocRef.id, id: globalDocRef.id }); // Add cross-reference
+    batch.set(globalDocRef, { ...newTransaction, userTransactionId: userTransactionDocRef.id, id: globalDocRef.id });
     await batch.commit();
 
     revalidatePath('/wallet');
@@ -401,21 +396,19 @@ export async function requestDepositAction(userId: string, amount: number, utr: 
 export async function requestWithdrawalAction(userId: string, amount: number, upi: string) {
      const userDocRef = doc(db, "users", userId);
      const userDoc = await getDoc(userDocRef);
-     const currentBalance = userDoc.data()?.walletBalance ?? 0;
+     if (!userDoc.exists()) return { success: false, message: "User not found." };
+     
+     const winningsBalance = userDoc.data()?.winningsBalance ?? 0;
 
-    if (amount > currentBalance) {
-        return { success: false, message: "Cannot withdraw more than current balance." };
+    if (amount > winningsBalance) {
+        return { success: false, message: `Cannot withdraw more than your winnings balance of ₹${winningsBalance.toFixed(2)}.` };
     }
 
     const transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
     const globalTransactionsCollectionRef = collection(db, "transactions");
 
     const newTransaction: Omit<Transaction, "id" | "timestamp"> & { timestamp: any } = {
-        type: 'withdrawal',
-        amount,
-        status: 'pending',
-        upi,
-        userId: userId, // Store userId for admin handling
+        type: 'withdrawal', amount, status: 'pending', upi, userId,
         timestamp: serverTimestamp(),
     };
     
@@ -425,6 +418,8 @@ export async function requestWithdrawalAction(userId: string, amount: number, up
     const batch = writeBatch(db);
     batch.set(userTransactionDocRef, newTransaction);
     batch.set(globalDocRef, { ...newTransaction, userTransactionId: userTransactionDocRef.id, id: globalDocRef.id });
+    // Also deduct from winnings balance immediately to prevent double withdrawal
+    batch.update(userDocRef, { winningsBalance: increment(-amount) });
     await batch.commit();
     
     revalidatePath('/wallet');
@@ -439,11 +434,8 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
     try {
         await runTransaction(db, async (transaction) => {
             const globalDoc = await transaction.get(globalTransactionRef);
-            if (!globalDoc.exists()) {
-                throw "Transaction not found.";
-            }
-             if (globalDoc.data().status !== 'pending') {
-                throw "This transaction has already been processed.";
+            if (!globalDoc.exists() || globalDoc.data().status !== 'pending') {
+                throw "Transaction not found or already processed.";
             }
 
             const transData = globalDoc.data() as Transaction;
@@ -451,25 +443,21 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
             const userTransactionRef = doc(db, `users/${transData.userId}/transactions`, transData.userTransactionId!);
 
             const userDoc = await transaction.get(userDocRef);
-            if (!userDoc.exists()) {
-                throw "User to update not found";
-            }
+            if (!userDoc.exists()) throw "User to update not found";
             
-            // Update global transaction doc
             transaction.update(globalTransactionRef, { status: newStatus });
-            
-            // Update user-specific transaction doc
             transaction.update(userTransactionRef, { status: newStatus });
 
             if (newStatus === 'approved') {
-                const currentBalance = userDoc.data().walletBalance;
                 if (transData.type === 'deposit') {
-                    transaction.update(userDocRef, { walletBalance: increment(transData.amount) });
+                    transaction.update(userDocRef, { depositBalance: increment(transData.amount) });
                 } else if (transData.type === 'withdrawal') {
-                     if (transData.amount > currentBalance) {
-                        throw "User has insufficient balance for this withdrawal."
-                    }
-                    transaction.update(userDocRef, { walletBalance: increment(-transData.amount) });
+                    // Money is already deducted from winningsBalance on request, so no change on approval.
+                }
+            } else if (newStatus === 'rejected') {
+                if (transData.type === 'withdrawal') {
+                    // Refund the amount to the user's winnings balance if withdrawal is rejected.
+                    transaction.update(userDocRef, { winningsBalance: increment(transData.amount) });
                 }
             }
         });
@@ -479,20 +467,15 @@ export async function handleTransactionAction(transactionId: string, newStatus: 
         revalidatePath('/dashboard');
         
         return { success: true, message: `Transaction ${newStatus}.` };
-
     } catch (e: any) {
         console.error("handleTransactionAction failed: ", e);
-        return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred while processing the transaction." };
+        return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
     }
 }
 
 
 export async function getGuruSuggestionAction(history: Bet[]): Promise<{ suggestion?: string, error?: string }> {
   try {
-    // We only care about colorcash history for the guru for now.
-    const colorCashHistory = history.filter(b => b.gameId === 'colorcash' || !b.gameId);
-    // const result = await suggestBet({ history: colorCashHistory });
-    // return { suggestion: result.suggestion };
     return { suggestion: "The Guru is currently meditating." };
   } catch (error) {
     console.error('Error getting suggestion:', error);
@@ -506,10 +489,7 @@ export async function getLiveGameData(): Promise<{ currentRound: LiveGameRound |
     const liveStatusRef = doc(db, "liveGameStatus", "current");
     const docSnap = await getDoc(liveStatusRef);
 
-    if (!docSnap.exists()) {
-        return { currentRound: null };
-    }
-
+    if (!docSnap.exists()) return { currentRound: null };
     return { currentRound: serializeObject(docSnap.data()) as LiveGameRound };
 }
 
@@ -530,34 +510,34 @@ export async function placeFourColorBetAction(userId: string, amount: number, be
             if (!roundDoc.exists()) throw new Error("No active game round.");
             
             const roundData = roundDoc.data() as LiveGameRound;
-            if (roundData.status !== 'betting') {
-                throw new Error("Betting for this round is closed.");
-            }
+            if (roundData.status !== 'betting') throw new Error("Betting for this round is closed.");
 
-            const currentBalance = userDoc.data().walletBalance;
-            if (amount > currentBalance) throw new Error("Insufficient balance.");
+            const userData = userDoc.data() as UserData;
+            const currentBalances = {
+                deposit: userData.depositBalance ?? 0,
+                winnings: userData.winningsBalance ?? 0,
+                bonus: userData.bonusBalance ?? 0,
+            };
+            const totalBalance = currentBalances.deposit + currentBalances.winnings + currentBalances.bonus;
+            if (amount > totalBalance) throw new Error("Insufficient balance.");
+            
+            const deductions = deductFromBalances(amount, currentBalances);
 
-            // Deduct amount immediately & update bet stats
-            transaction.update(userDocRef, { walletBalance: increment(-amount) });
+            transaction.update(userDocRef, {
+                depositBalance: increment(-deductions.deposit),
+                winningsBalance: increment(-deductions.winnings),
+                bonusBalance: increment(-deductions.bonus),
+            });
             transaction.update(roundStatusDocRef, {
                 [`betCounts.${betOnColor}`]: increment(1),
                 [`betAmounts.${betOnColor}`]: increment(amount),
-            })
+            });
 
-            // Record the bet in a single, queryable collection
-             const newBet: Omit<LiveBet, 'id'> = {
-                userId,
-                roundId: roundData.id,
-                gameId: 'live-four-color',
-                betOnColor,
-                amount,
-                payout: null,
-                status: 'pending',
-                outcome: 'pending',
-                timestamp: serverTimestamp() as any,
+            const newBet: Omit<LiveBet, 'id'> = {
+                userId, roundId: roundData.id, gameId: 'live-four-color', betOnColor, amount,
+                payout: null, status: 'pending', outcome: 'pending', timestamp: serverTimestamp() as any,
             };
             transaction.set(betDocRef, newBet);
-
             return roundData.id;
         });
         
@@ -578,11 +558,9 @@ export async function startFourColorRoundAction(): Promise<{ success: boolean; m
 
     const newRound: LiveGameRound = {
         id: `4-color-round-${now.toMillis()}`,
-        status: 'betting',
-        startTime: now,
+        status: 'betting', startTime: now,
         endTime: Timestamp.fromMillis(now.toMillis() + 10 * 60 * 1000), // 10 minutes
-        winningColor: null,
-        resultTimestamp: null,
+        winningColor: null, resultTimestamp: null,
         betCounts: { Red: 0, Yellow: 0, Black: 0, Blue: 0 },
         betAmounts: { Red: 0, Yellow: 0, Black: 0, Blue: 0 },
     };
@@ -610,22 +588,14 @@ export async function endFourColorRoundAction(winningColor: 'Red' | 'Yellow' | '
         const round = roundDoc.data() as LiveGameRound;
         if (round.status !== 'betting') throw new Error("Round is not in a betting state.");
 
-        // Update round status to 'awarding'
         batch.update(liveStatusRef, {
-            status: "awarding",
-            winningColor: winningColor,
-            resultTimestamp: serverTimestamp(),
+            status: "awarding", winningColor, resultTimestamp: serverTimestamp(),
         });
         
-        // Payout logic
-        const betsSnapshot = await getDocs(
-            query(collection(db, "bets"), where("roundId", "==", round.id))
-        );
+        const betsSnapshot = await getDocs(query(collection(db, "bets"), where("roundId", "==", round.id)));
 
-        if (betsSnapshot.empty) {
-            console.log("No bets placed in this round.");
-        } else {
-            const PAYOUT_MULTIPLIER = 1.9; // Set all winning payouts to 1.9x for a house edge
+        if (!betsSnapshot.empty) {
+            const PAYOUT_MULTIPLIER = 1.9;
             betsSnapshot.docs.forEach((betDoc) => {
                 const bet = betDoc.data() as LiveBet;
                 if (bet.betOnColor === winningColor) {
@@ -633,7 +603,8 @@ export async function endFourColorRoundAction(winningColor: 'Red' | 'Yellow' | '
                     batch.update(betDoc.ref, { status: "won", outcome: "win", payout: payout });
                     
                     const userRef = doc(db, "users", bet.userId);
-                    batch.update(userRef, { walletBalance: increment(payout) });
+                    // Payouts always go to winningsBalance
+                    batch.update(userRef, { winningsBalance: increment(payout) });
                 } else {
                     batch.update(betDoc.ref, { status: "lost", outcome: "loss", payout: 0 });
                 }
@@ -655,9 +626,7 @@ export async function endFourColorRoundAction(winningColor: 'Red' | 'Yellow' | '
 
 export async function changePasswordAction(uid: string, newPassword: string): Promise<{success: boolean, message: string}> {
     try {
-        await getAuth(app).updateUser(uid, {
-            password: newPassword,
-        });
+        await getAuth(app).updateUser(uid, { password: newPassword });
         return { success: true, message: "Password updated successfully." };
     } catch(e: any) {
         console.error("changePasswordAction failed: ", e);
@@ -670,9 +639,7 @@ export async function updateUserPresence(userId: string) {
     if (!userId) return;
     const userDocRef = doc(db, "users", userId);
     try {
-        await updateDoc(userDocRef, {
-            lastSeen: serverTimestamp(),
-        });
+        await updateDoc(userDocRef, { lastSeen: serverTimestamp() });
     } catch (error) {
         // It's okay if this fails silently, not critical for user experience
         console.log(`Failed to update presence for user ${userId}:`, error);
@@ -691,5 +658,3 @@ export async function getAllUsers(): Promise<{ users: UserData[] }> {
         return { users: [] };
     }
 }
-
-    

@@ -69,20 +69,21 @@ export function UserStatusTable() {
               <TableHead>User ID</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Seen</TableHead>
-              <TableHead className="text-right">Wallet Balance</TableHead>
+              <TableHead className="text-right">Total Balance</TableHead>
+              <TableHead className="text-right hidden sm:table-cell">Winnings</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {allUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   No users found.
                 </TableCell>
               </TableRow>
             ) : (
               allUsers.map((user: UserData) => (
                 <TableRow key={user.uid}>
-                  <TableCell className="truncate max-w-xs">{user.uid}</TableCell>
+                  <TableCell className="truncate max-w-[120px] sm:max-w-xs">{user.uid}</TableCell>
                    <TableCell>
                     {isOnline(user.lastSeen) ? (
                         <Badge><span className="relative flex h-2 w-2 rounded-full bg-green-500 mr-2"></span>Online</Badge>
@@ -93,7 +94,8 @@ export function UserStatusTable() {
                   <TableCell>
                     {user.lastSeen ? formatDistanceToNow(toDate(user.lastSeen), { addSuffix: true }) : 'Never'}
                   </TableCell>
-                  <TableCell className="text-right">₹{user.walletBalance.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">₹{((user.depositBalance ?? 0) + (user.winningsBalance ?? 0) + (user.bonusBalance ?? 0)).toFixed(2)}</TableCell>
+                  <TableCell className="text-right hidden sm:table-cell">₹{(user.winningsBalance ?? 0).toFixed(2)}</TableCell>
                 </TableRow>
               ))
             )}

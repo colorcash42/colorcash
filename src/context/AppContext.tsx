@@ -65,7 +65,8 @@ interface AppContextType {
   allUsers: UserData[]; // For Admin
   isLoggedIn: boolean;
   isLoading: boolean;
-  walletBalance: number;
+  walletBalance: number; // Represents the total balance
+  winningsBalance: number; // Represents the withdrawable balance
   bets: Bet[];
   transactions: Transaction[];
   pendingTransactions: Transaction[]; // For admin
@@ -104,6 +105,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [allUsers, setAllUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [winningsBalance, setWinningsBalance] = useState(0);
   const [bets, setBets] = useState<Bet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
@@ -130,7 +132,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (currentUid) {
         const isAdmin = ADMIN_UIDS.includes(currentUid);
 
-        // Fetch user data and transactions in parallel.
         const [userDataRes, betsRes, transactionsRes, pendingTransRes] = await Promise.all([
             getUserData(currentUid),
             getBets(currentUid),
@@ -141,16 +142,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const fullUserData = userDataRes.userData;
         if(fullUserData) {
             setUserData(fullUserData);
-            setWalletBalance(fullUserData.walletBalance);
+            const total = (fullUserData.depositBalance || 0) + (fullUserData.winningsBalance || 0) + (fullUserData.bonusBalance || 0);
+            setWalletBalance(total);
+            setWinningsBalance(fullUserData.winningsBalance || 0);
         }
 
         setBets(betsRes.bets);
         setTransactions(transactionsRes.transactions);
         setPendingTransactions(pendingTransRes.transactions);
 
-        if (isAdmin) {
-           await fetchAllUsers();
-        }
+        if (isAdmin) await fetchAllUsers();
     }
   }, [user?.uid, fetchAllUsers]);
 
@@ -158,22 +159,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let presenceInterval: NodeJS.Timeout;
     if (user) {
-        // Update presence immediately on load and then every minute
         updateUserPresence(user.uid);
-        presenceInterval = setInterval(() => {
-            updateUserPresence(user.uid);
-        }, 60 * 1000); // 60 seconds
+        presenceInterval = setInterval(() => { updateUserPresence(user.uid); }, 60 * 1000);
     }
-    return () => {
-        if (presenceInterval) {
-            clearInterval(presenceInterval);
-        }
-    };
+    return () => { if (presenceInterval) clearInterval(presenceInterval); };
   }, [user]);
 
-
   useEffect(() => {
-    // Restore theme from localStorage
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
@@ -185,35 +177,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const storedSound = localStorage.getItem("soundEnabled");
-    if (storedSound !== null) {
-      setSoundEnabledState(JSON.parse(storedSound));
-    }
+    if (storedSound !== null) setSoundEnabledState(JSON.parse(storedSound));
 
-    // Auth state listener
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
-        fetchData(currentUser.uid);
-      }
+      if (currentUser) fetchData(currentUser.uid);
       setIsLoading(false);
     });
     
-    // Live game status listener
     const liveStatusRef = doc(db, "liveGameStatus", "current");
     const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
         const newRound = doc.exists() ? serializeObject(doc.data()) as LiveGameRound : null;
-
-        // If the round just finished (status changed from 'betting' to 'awarding'),
-        // we immediately refetch all user data to get updated wallet and bet history.
-        if (prevRoundStatusRef.current === 'betting' && newRound?.status === 'awarding') {
-            if(user) {
-              fetchData(user.uid);
-            }
+        if (prevRoundStatusRef.current === 'betting' && newRound?.status === 'awarding' && user) {
+            fetchData(user.uid);
         }
-        
         setLiveGameRound(newRound);
         prevRoundStatusRef.current = newRound?.status ?? null;
-        
     }, (error) => {
         console.error("Live game listener failed:", error);
         setLiveGameRound(null);
@@ -225,7 +204,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [fetchData, user]);
 
-  // Listener for user-specific live bets for the current round
   useEffect(() => {
     if (user && liveGameRound) {
         const betsRef = collection(db, "bets");
@@ -238,7 +216,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to fetch user's live bets:", error);
             setUserLiveBets([]);
         });
-
         return () => unsubscribe();
     } else {
         setUserLiveBets([]);
@@ -264,37 +241,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const loggedInUser = userCredential.user;
-      
       const isExemptAdmin = ADMIN_EMAILS.includes(email);
 
       if (!loggedInUser.emailVerified && !isExemptAdmin) {
-        toast({
-          variant: "destructive",
-          title: "Email Not Verified",
-          description: "Please check your email and click the verification link before logging in.",
-        });
-        await signOut(auth); // Sign out the user
+        toast({ variant: "destructive", title: "Email Not Verified", description: "Please check your email and click the verification link before logging in." });
+        await signOut(auth);
         setIsLoading(false);
         return;
       }
-      
-      toast({
-        variant: "success",
-        title: "Login Successful",
-        description: "Welcome back!",
-      });
-      // Auth listener will handle fetching data.
+      toast({ variant: "success", title: "Login Successful", description: "Welcome back!" });
       router.push("/dashboard");
     } catch (error: any) {
-      let message = "An unknown error occurred.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        message = "Invalid email or password.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: message,
-      });
+      let message = (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential')
+        ? "Invalid email or password." : "An unknown error occurred.";
+      toast({ variant: "destructive", title: "Login Failed", description: message });
     } finally {
         setIsLoading(false);
     }
@@ -305,40 +265,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const newUser = userCredential.user;
-      
-      // Send verification email
       await sendEmailVerification(newUser);
-
-      // Create user document in Firestore
       const docResult = await ensureUserDocument(newUser.uid, referralCode);
-      
-      // Sign out the user so they have to verify their email before logging in
       await signOut(auth);
-
-      toast({
-        variant: "success",
-        title: "Verification Email Sent!",
-        description: `Please check your email to verify your account. ${docResult.message}`,
-        duration: 9000,
-      });
-      
-      // Don't redirect, keep them on the login page.
-      // router.push("/dashboard");
-
+      toast({ variant: "success", title: "Verification Email Sent!", description: `Please check your email to verify your account. ${docResult.message}`, duration: 9000 });
     } catch (error: any) {
       let message = "An unknown error occurred.";
-      if (error.code === 'auth/email-already-in-use') {
-          message = "This email address is already in use.";
-      } else if (error.code === 'auth/weak-password') {
-          message = "Password should be at least 6 characters.";
-      } else if (error.code === 'auth/invalid-email') {
-          message = "Please enter a valid email address.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Signup Failed",
-        description: message,
-      });
+      if (error.code === 'auth/email-already-in-use') message = "This email address is already in use.";
+      else if (error.code === 'auth/weak-password') message = "Password should be at least 6 characters.";
+      else if (error.code === 'auth/invalid-email') message = "Please enter a valid email address.";
+      toast({ variant: "destructive", title: "Signup Failed", description: message });
     } finally {
         setIsLoading(false);
     }
@@ -348,88 +284,55 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     await signOut(auth);
     setUserData(null);
     setWalletBalance(0);
+    setWinningsBalance(0);
     setBets([]);
     setTransactions([]);
     setPendingTransactions([]);
     router.push("/");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
   };
 
-  const placeBet = async (amount: number, betType: ColorCashBetType, betValue: string | number) => {
-    if (!user) {
-      const failResult = { success: false, message: "User not logged in" };
-      toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
-      return failResult;
-    };
-    const result = await placeBetAction(user.uid, amount, betType, betValue);
-    
+  const handleBetResponse = async (result: any) => {
     if (result.success) {
-        await fetchData(user.uid);
+      if (user) await fetchData(user.uid);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Bet Failed",
-        description: result.message,
-      });
+      toast({ variant: "destructive", title: "Bet Failed", description: result.message });
     }
     return result;
   };
+
+  const placeBet = (amount: number, betType: ColorCashBetType, betValue: string | number) => {
+    if (!user) return Promise.resolve({ success: false, message: "User not logged in" });
+    return placeBetAction(user.uid, amount, betType, betValue).then(handleBetResponse);
+  };
   
-  const placeOddEvenBet = async (amount: number, betValue: OddEvenBetType) => {
-    if (!user) {
-      const failResult = { success: false, message: "User not logged in" };
-      toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
-      return failResult;
-    };
-    const result = await placeOddEvenBetAction(user.uid, amount, betValue);
-    
-    if (result.success) {
-      await fetchData(user.uid);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Bet Failed",
-        description: result.message,
-      });
-    }
-    return result;
+  const placeOddEvenBet = (amount: number, betValue: OddEvenBetType) => {
+    if (!user) return Promise.resolve({ success: false, message: "User not logged in" });
+    return placeOddEvenBetAction(user.uid, amount, betValue).then(handleBetResponse);
   };
   
   const placeFourColorBet = async (amount: number, betOnColor: FourColorBetType) => {
     if (!user) {
-      const failResult = { success: false, message: "User not logged in" };
-      toast({ variant: "destructive", title: "Bet Failed", description: failResult.message });
-      return failResult;
-    };
+      toast({ variant: "destructive", title: "Bet Failed", description: "User not logged in" });
+      return;
+    }
     const result = await placeFourColorBetAction(user.uid, amount, betOnColor);
-    
     if (result.success) {
        toast({ title: "Bet Placed!", description: result.message });
        await fetchData(user.uid);
     } else {
        toast({ variant: "destructive", title: "Bet Failed", description: result.message });
     }
-    return result;
   };
 
   const requestDeposit = async (amount: number, utr: string) => {
     if (!user) return;
     const result = await requestDepositAction(user.uid, amount, utr);
     if(result.success) {
-        toast({
-            title: 'Deposit Request Submitted',
-            description: result.message
-        });
+        toast({ title: 'Deposit Request Submitted', description: result.message });
         await fetchData(user.uid);
     } else {
-        toast({
-            variant: 'destructive',
-            title: 'Request Failed',
-            description: result.message
-        });
+        toast({ variant: 'destructive', title: 'Request Failed', description: result.message });
     }
   };
 
@@ -437,17 +340,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     const result = await requestWithdrawalAction(user.uid, amount, upi);
      if(result.success) {
-        toast({
-            title: 'Withdrawal Request Submitted',
-            description: result.message
-        });
+        toast({ title: 'Withdrawal Request Submitted', description: result.message });
         await fetchData(user.uid);
     } else {
-        toast({
-            variant: 'destructive',
-            title: 'Request Failed',
-            description: result.message
-        });
+        toast({ variant: 'destructive', title: 'Request Failed', description: result.message });
     }
   };
 
@@ -458,34 +354,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     const result = await handleTransactionAction(transactionId, newStatus);
     if (result.success) {
-       toast({
-            variant: "success",
-            title: `Transaction ${newStatus}`,
-            description: result.message
-        });
-        await fetchData(user.uid);
+       toast({ variant: "success", title: `Transaction ${newStatus}`, description: result.message });
+       await fetchData(user.uid);
     } else {
-        toast({
-            variant: 'destructive',
-            title: 'Action Failed',
-            description: result.message
-        });
+        toast({ variant: 'destructive', title: 'Action Failed', description: result.message });
     }
   };
   
   const getGuruSuggestion = async () => {
     if (!user) return;
     const result = await getGuruSuggestionAction(bets);
-     if (result.suggestion) {
-       return result.suggestion;
-    } else {
-        toast({
-            variant: 'destructive',
-            title: 'Guru is Busy',
-            description: result.error
-        });
-        return undefined;
-    }
+     if (result.suggestion) return result.suggestion;
+     toast({ variant: 'destructive', title: 'Guru is Busy', description: result.error });
+     return undefined;
   }
   
   const changePassword = async (currentPass: string, newPass: string) => {
@@ -494,27 +375,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
        toast({ variant: 'destructive', title: 'Error', description: result.message });
       return result;
     }
-
     try {
       const credential = EmailAuthProvider.credential(user.email, currentPass);
       await reauthenticateWithCredential(user, credential);
-      
-      // The password is not changed via a server action anymore, so this call can be removed.
-      // await changePasswordAction(user.uid, newPass); 
       await updatePassword(user, newPass);
-      
       const result = { success: true, message: "Password updated successfully!" };
       toast({ variant: "success", title: 'Success', description: result.message });
       return result;
-
     } catch (error: any) {
-      let errorMessage = "An unknown error occurred.";
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = 'The current password you entered is incorrect.';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'The new password is too weak.';
-      }
-      
+      let errorMessage = (error.code === 'auth/wrong-password') 
+        ? 'The current password you entered is incorrect.' 
+        : (error.code === 'auth/weak-password') ? 'The new password is too weak.' : "An unknown error occurred.";
       const result = { success: false, message: errorMessage };
       toast({ variant: 'destructive', title: 'Password Change Failed', description: result.message });
       return result;
@@ -524,82 +395,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const sendPasswordReset = async (email: string) => {
     try {
       await sendPasswordResetEmail(auth, email);
-      toast({
-        title: 'Password Reset Email Sent',
-        description: `A reset link has been sent to ${email}.`,
-      });
+      toast({ title: 'Password Reset Email Sent', description: `A reset link has been sent to ${email}.` });
       return true;
     } catch (error: any) {
-      let errorMessage = "An unknown error occurred. Please try again.";
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email address.';
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Reset Failed',
-        description: errorMessage,
-      });
+      let errorMessage = (error.code === 'auth/user-not-found') ? 'No account found with this email address.' : "An unknown error occurred. Please try again.";
+      toast({ variant: 'destructive', title: 'Reset Failed', description: errorMessage });
       return false;
     }
   };
 
-  // Admin actions for the new game
   const startFourColorRound = async () => {
       if (!isUserAdmin) return;
       const result = await startFourColorRoundAction();
-      if (result.success) {
-          toast({ variant: "success", title: "Success", description: result.message });
-      } else {
-          toast({ variant: "destructive", title: "Error", description: result.message });
-      }
+      if (result.success) toast({ variant: "success", title: "Success", description: result.message });
+      else toast({ variant: "destructive", title: "Error", description: result.message });
   };
 
   const endFourColorRound = async (winningColor: FourColorBetType) => {
       if (!isUserAdmin) return;
       const result = await endFourColorRoundAction(winningColor);
-      if (result.success) {
-          toast({ variant: "success", title: "Round Ended", description: result.message });
-      } else {
-          toast({ variant: "destructive", title: "Error", description: result.message });
-      }
+      if (result.success) toast({ variant: "success", title: "Round Ended", description: result.message });
+      else toast({ variant: "destructive", title: "Error", description: result.message });
   };
 
-
   const value = {
-    user,
-    userData,
-    allUsers,
-    isLoggedIn,
-    isLoading,
-    walletBalance,
-    bets,
-    transactions,
-    pendingTransactions,
-    liveGameRound,
-    userLiveBets,
-    login,
-    signup,
-    logout,
-    placeBet,
-    placeOddEvenBet,
-    placeFourColorBet,
-    requestDeposit,
-    requestWithdrawal,
-    handleTransaction,
-    getGuruSuggestion,
-    changePassword,
-    sendPasswordReset,
-    fetchData,
-    fetchAllUsers,
-    theme,
-    setTheme,
-    isUserAdmin,
-    viewAsAdmin,
-    setViewAsAdmin,
-    soundEnabled,
-    setSoundEnabled,
-    startFourColorRound,
-    endFourColorRound,
+    user, userData, allUsers, isLoggedIn, isLoading, walletBalance, winningsBalance,
+    bets, transactions, pendingTransactions, liveGameRound, userLiveBets,
+    login, signup, logout, placeBet, placeOddEvenBet, placeFourColorBet,
+    requestDeposit, requestWithdrawal, handleTransaction, getGuruSuggestion,
+    changePassword, sendPasswordReset, fetchData, fetchAllUsers,
+    theme, setTheme, isUserAdmin, viewAsAdmin, setViewAsAdmin,
+    soundEnabled, setSoundEnabled, startFourColorRound, endFourColorRound,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -60,10 +60,12 @@ export type LiveBet = {
   timestamp: string | FieldValue;
 }
 
-// User data, including referral information
+// User data, including referral information and separated wallet balances
 export type UserData = {
     uid: string;
-    walletBalance: number;
+    depositBalance: number; // Money deposited by user
+    winningsBalance: number; // Money won from games, withdrawable
+    bonusBalance: number; // Signup and referral bonuses, not withdrawable
     referralCode: string;
     referredBy: string | null;
     successfulReferrals: number;

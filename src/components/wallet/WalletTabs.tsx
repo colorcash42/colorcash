@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy, Download, Gift, Users, Share2, QrCode } from 'lucide-react';
+import { Loader2, ArrowDownCircle, ArrowUpCircle, Copy, Download, Gift, Users, Share2, QrCode, Trophy } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
@@ -111,7 +111,7 @@ function DepositForm() {
 }
 
 function WithdrawalForm() {
-    const { requestWithdrawal, walletBalance } = useAppContext();
+    const { requestWithdrawal, winningsBalance } = useAppContext();
     const [amount, setAmount] = useState('');
     const [upi, setUpi] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -124,8 +124,8 @@ function WithdrawalForm() {
             toast({ variant: 'destructive', title: 'Invalid amount' });
             return;
         }
-        if (withdrawalAmount > walletBalance) {
-            toast({ variant: 'destructive', title: 'Insufficient balance' });
+        if (withdrawalAmount > winningsBalance) {
+            toast({ variant: 'destructive', title: 'Insufficient Winnings Balance', description: `You can only withdraw up to ₹${winningsBalance.toFixed(2)}.` });
             return;
         }
         if (!upi) {
@@ -141,6 +141,13 @@ function WithdrawalForm() {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+             <Alert variant="default" className="bg-blue-500/10 border-blue-500/50">
+                <Trophy className="h-4 w-4 text-blue-600" />
+                <AlertTitle>Withdrawable Balance: ₹{winningsBalance.toFixed(2)}</AlertTitle>
+                <AlertDescription>
+                    You can only withdraw the amount you have won from playing games.
+                </AlertDescription>
+            </Alert>
             <div>
                 <Label htmlFor="withdrawal-amount">Amount</Label>
                 <Input id="withdrawal-amount" type="number" placeholder="Enter amount to withdraw" value={amount} onChange={(e) => setAmount(e.target.value)} required />
@@ -269,7 +276,7 @@ function ReferAndEarn() {
                 <Gift className="h-4 w-4" />
                 <AlertTitle>How it Works</AlertTitle>
                 <AlertDescription>
-                    When your friend signs up with your code, they get a <strong className="text-foreground">₹75 bonus</strong> and you get <strong className="text-foreground">₹25</strong> in your wallet!
+                    When your friend signs up with your code, they get a <strong className="text-foreground">₹75 bonus</strong> and you get <strong className="text-foreground">₹25</strong> in your bonus wallet!
                 </AlertDescription>
             </Alert>
         </div>
@@ -303,7 +310,7 @@ export function WalletTabs() {
           <CardHeader>
             <CardTitle>Withdraw</CardTitle>
             <CardDescription>
-              Request a withdrawal to your UPI account.
+              Request a withdrawal to your UPI account. You can only withdraw your winnings.
             </CardDescription>
           </CardHeader>
           <CardContent>

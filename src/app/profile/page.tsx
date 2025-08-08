@@ -4,7 +4,7 @@
 import { PageClientAuth } from "@/components/common/PageClientAuth";
 import { Header } from "@/components/common/Header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Lock, Loader2, CircleDollarSign } from "lucide-react";
+import { Lock, Loader2, CircleDollarSign, Gift, Trophy } from "lucide-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -108,7 +108,7 @@ function ChangePasswordForm() {
 
 
 export default function ProfilePage() {
-  const { walletBalance } = useAppContext();
+  const { userData } = useAppContext();
 
   return (
     <PageClientAuth>
@@ -123,15 +123,27 @@ export default function ProfilePage() {
                 <CardTitle className="text-3xl font-bold">
                     Profile & Security
                 </CardTitle>
-                <CardDescription>Manage your account settings.</CardDescription>
+                <CardDescription>Manage your account settings and view your balances.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="p-4 rounded-lg bg-secondary flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
-                        <span className="font-medium text-muted-foreground">Current Balance</span>
+                <div className="space-y-2">
+                    <div className="p-4 rounded-lg bg-secondary flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">Total Balance</span>
+                        </div>
+                        <span className="text-xl font-bold">₹{((userData?.depositBalance ?? 0) + (userData?.winningsBalance ?? 0) + (userData?.bonusBalance ?? 0)).toFixed(2)}</span>
                     </div>
-                    <span className="text-xl font-bold">₹{walletBalance.toFixed(2)}</span>
+                     <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="p-3 rounded-md bg-secondary/50 flex flex-col items-center justify-center">
+                            <span className="text-muted-foreground flex items-center gap-1"><Trophy className="h-4 w-4"/> Winnings</span>
+                            <span className="font-bold">₹{(userData?.winningsBalance ?? 0).toFixed(2)}</span>
+                        </div>
+                         <div className="p-3 rounded-md bg-secondary/50 flex flex-col items-center justify-center">
+                            <span className="text-muted-foreground flex items-center gap-1"><Gift className="h-4 w-4" /> Bonus</span>
+                            <span className="font-bold">₹{(userData?.bonusBalance ?? 0).toFixed(2)}</span>
+                        </div>
+                    </div>
                 </div>
                 <Separator />
                 <div>
@@ -145,4 +157,3 @@ export default function ProfilePage() {
     </PageClientAuth>
   );
 }
-
