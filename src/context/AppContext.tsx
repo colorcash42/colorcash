@@ -30,7 +30,7 @@ import {
 } from "@/app/actions";
 import { doc, onSnapshot, Timestamp, collection, query, where } from "firebase/firestore";
 
-type Theme = "light" | "dark" | "dark-pro";
+type Theme = "light" | "dark";
 type ColorCashBetType = 'color' | 'number' | 'size' | 'trio';
 type OddEvenBetType = 'Odd' | 'Even';
 type FourColorBetType = 'Red' | 'Yellow' | 'Black' | 'Blue';
@@ -104,7 +104,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [liveGameRound, setLiveGameRound] = useState<LiveGameRound | null>(null);
   const [userLiveBets, setUserLiveBets] = useState<LiveBet[]>([]);
-  const [theme, setThemeState] = useState<Theme>('dark-pro');
+  const [theme, setThemeState] = useState<Theme>('dark');
   const [viewAsAdmin, setViewAsAdmin] = useState(true);
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const { toast } = useToast();

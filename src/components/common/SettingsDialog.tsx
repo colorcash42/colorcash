@@ -81,6 +81,11 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
     setIsPasswordLoading(false);
   };
 
+  const handleThemeChange = (value: string) => {
+    setTheme(value as any);
+    onOpenChange(false);
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] flex flex-col">
@@ -94,7 +99,7 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
         <div className="py-4 space-y-6">
             <div className="space-y-2">
                 <Label>Theme</Label>
-                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <RadioGroup value={theme} onValueChange={handleThemeChange} className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                     <Label className="p-2 border rounded-md has-[:checked]:border-primary flex flex-col items-center justify-center cursor-pointer">
                         <RadioGroupItem value="light" id="light" className="sr-only" />
                         <Sun className="h-6 w-6 mb-1"/>
@@ -104,11 +109,6 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
                         <RadioGroupItem value="dark" id="dark" className="sr-only" />
                         <Moon className="h-6 w-6 mb-1"/>
                         <span className="text-xs">Dark</span>
-                    </Label>
-                    <Label className="p-2 border rounded-md has-[:checked]:border-primary flex flex-col items-center justify-center cursor-pointer">
-                        <RadioGroupItem value="dark-pro" id="dark-pro" className="sr-only" />
-                        <Moon className="h-6 w-6 mb-1" />
-                        <span className="text-xs">Dark Pro</span>
                     </Label>
                 </RadioGroup>
             </div>
