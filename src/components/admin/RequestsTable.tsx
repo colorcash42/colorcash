@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAppContext } from "@/context/AppContext";
@@ -26,14 +27,16 @@ const toDate = (timestamp: string | Date): Date => {
 };
 
 
-export function RequestsTable() {
+export function RequestsTable({ type }: { type: 'deposit' | 'withdrawal' }) {
   const { handleTransaction, pendingTransactions } = useAppContext();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const sortedPendingTransactions = useMemo(() => {
+  const sortedTransactions = useMemo(() => {
     if (!pendingTransactions) return [];
-    return [...pendingTransactions].sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
-  }, [pendingTransactions]);
+    return pendingTransactions
+      .filter(t => t.type === type && t.status === 'pending')
+      .sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
+  }, [pendingTransactions, type]);
 
 
   const onHandleTransaction = async (id: string, status: 'approved' | 'rejected') => {
@@ -42,11 +45,16 @@ export function RequestsTable() {
     setProcessingId(null);
   }
 
+  const title = type === 'deposit' ? 'Pending Deposits' : 'Pending Withdrawals';
+  const description = type === 'deposit' 
+    ? "Review and approve deposit requests from users." 
+    : "Review and approve withdrawal requests from users.";
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pending Requests</CardTitle>
-        <CardDescription>Review deposit and withdrawal requests from users.</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -61,14 +69,14 @@ export function RequestsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedPendingTransactions.length === 0 ? (
+            {sortedTransactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
-                  No pending requests.
+                  No pending {type} requests.
                 </TableCell>
               </TableRow>
             ) : (
-              sortedPendingTransactions.map((t: Transaction) => (
+              sortedTransactions.map((t: Transaction) => (
                 <TableRow key={t.id}>
                   <TableCell>{t.timestamp ? format(toDate(t.timestamp), 'PP pp') : 'No date'}</TableCell>
                   <TableCell className="hidden md:table-cell truncate max-w-xs">{t.userId}</TableCell>

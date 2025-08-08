@@ -8,7 +8,7 @@ import { Header } from "@/components/common/Header";
 import { RequestsTable } from "@/components/admin/RequestsTable";
 import { useAppContext } from "@/context/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Gamepad, ReceiptText, Users } from "lucide-react";
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Gamepad, Users } from "lucide-react";
 import { LiveGameAdmin } from "@/components/admin/LiveGameAdmin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserStatusTable } from "@/components/admin/UserStatusTable";
@@ -61,17 +61,21 @@ export default function AdminPage() {
             </div>
 
              <Tabs defaultValue="live-game" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="live-game"><Gamepad /> Live Game</TabsTrigger>
-                    <TabsTrigger value="requests"><ReceiptText /> Requests</TabsTrigger>
+                    <TabsTrigger value="deposits"><ArrowDownCircle /> Deposits</TabsTrigger>
+                    <TabsTrigger value="withdrawals"><ArrowUpCircle /> Withdrawals</TabsTrigger>
                     <TabsTrigger value="users"><Users /> Users</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="live-game" className="mt-4">
                     <LiveGameAdmin />
                 </TabsContent>
-                <TabsContent value="requests" className="mt-4">
-                     <RequestsTable />
+                <TabsContent value="deposits" className="mt-4">
+                     <RequestsTable type="deposit" />
+                </TabsContent>
+                <TabsContent value="withdrawals" className="mt-4">
+                     <RequestsTable type="withdrawal" />
                 </TabsContent>
                  <TabsContent value="users" className="mt-4">
                     <UserStatusTable />
