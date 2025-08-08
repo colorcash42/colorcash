@@ -12,15 +12,8 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label";
 import { useAppContext } from "@/context/AppContext";
-import { Moon, Sun, Shield, Volume2, VolumeX, Lock, Loader2, Palette } from "lucide-react";
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { useToast } from "@/hooks/use-toast";
+import { Moon, Sun, Shield, Volume2, VolumeX, Palette } from "lucide-react";
+import React from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
@@ -28,18 +21,6 @@ interface SettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
-
-const passwordFormSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required."),
-  newPassword: z.string().min(6, "New password must be at least 6 characters."),
-  confirmPassword: z.string()
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
-type PasswordFormValues = z.infer<typeof passwordFormSchema>;
-
 
 export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
   const { 
@@ -50,37 +31,11 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
     setViewAsAdmin, 
     soundEnabled, 
     setSoundEnabled,
-    changePassword 
   } = useAppContext();
-  
-  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-  const { toast } = useToast();
-  
-  const form = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordFormSchema),
-    defaultValues: {
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: ""
-    }
-  });
-
-  const onSubmit = async (data: PasswordFormValues) => {
-    setIsPasswordLoading(true);
-    const result = await changePassword(data.currentPassword, data.newPassword);
-    if(result.success) {
-      toast({
-        title: "Success",
-        description: result.message
-      });
-      form.reset();
-    }
-    setIsPasswordLoading(false);
-  };
   
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
       setTheme(newTheme);
-      // Removed onOpenChange(false) to allow user to see the change
+      onOpenChange(false);
   }
 
   return (
@@ -139,57 +94,6 @@ export function SettingsDialog({ isOpen, onOpenChange }: SettingsDialogProps) {
                       <Switch id="sound-effects" checked={soundEnabled} onCheckedChange={setSoundEnabled} />
                     </div>
               </div>
-
-            <Separator />
-            
-                <Form {...form}>
-                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <h3 className="text-sm font-medium flex items-center gap-2"><Lock /> Security</h3>
-                      <FormField
-                        control={form.control}
-                        name="currentPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="newPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>New Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Confirm New Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    <Button type="submit" disabled={isPasswordLoading}>
-                        {isPasswordLoading ? <Loader2 className="animate-spin" /> : null}
-                        {isPasswordLoading ? "Updating..." : "Update Password"}
-                    </Button>
-                </form>
-            </Form>
 
             {isUserAdmin && (
               <>

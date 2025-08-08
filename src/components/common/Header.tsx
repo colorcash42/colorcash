@@ -135,6 +135,12 @@ export function Header() {
                     </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                   <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">
+                        <User />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setIsSettingsOpen(true)}>
                        <Settings /> Settings
                     </DropdownMenuItem>
