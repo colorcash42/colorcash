@@ -236,18 +236,14 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             if (betType === 'color') {
                 if (betValue === 'Violet' && (winningNumber === 0 || winningNumber === 5)) {
                     isWin = true;
-                    payoutRate = 4.5;
                 } else if (betValue === 'Red' && (winningColor === 'Red' || winningColor === 'VioletRed')) {
                     isWin = true;
-                    payoutRate = (winningNumber === 0) ? 1.5 : 2;
                 } else if (betValue === 'Green' && (winningColor === 'Green' || winningColor === 'VioletGreen')) {
                     isWin = true;
-                    payoutRate = (winningNumber === 5) ? 1.5 : 2;
                 }
             } else if (betType === 'number') {
                  if (winningNumber === Number(betValue)) {
                     isWin = true;
-                    payoutRate = 9;
                 }
             } else if (betType === 'trio') {
                 const trioMap: { [key: string]: number[] } = {
@@ -257,15 +253,17 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                 };
                 if (trioMap[betValue as string]?.includes(winningNumber)) {
                     isWin = true;
-                    payoutRate = 3;
                 }
             } else if (betType === 'size') {
                 if (winningSize === betValue) {
                     isWin = true;
-                    payoutRate = 2;
                 }
             }
             // --- END GAME LOGIC ---
+            
+            if (isWin) {
+                payoutRate = 2; // Set all winning payouts to 2x
+            }
 
             const payout = isWin ? amount * payoutRate : 0;
             const newBalance = currentBalance - amount + payout;
@@ -331,7 +329,7 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
                 isWin = true;
             }
             
-            const payoutRate = 2;
+            const payoutRate = 2; // Set payout to 2x
             const payout = isWin ? amount * payoutRate : 0;
             const newBalance = currentBalance - amount + payout;
 
@@ -621,7 +619,7 @@ export async function endFourColorRoundAction(winningColor: 'Red' | 'Yellow' | '
         if (betsSnapshot.empty) {
             console.log("No bets placed in this round.");
         } else {
-            const PAYOUT_MULTIPLIER = 3.5; // Example: Win 3.5x the bet amount
+            const PAYOUT_MULTIPLIER = 2; // Set all winning payouts to 2x
             betsSnapshot.docs.forEach((betDoc) => {
                 const bet = betDoc.data() as LiveBet;
                 if (bet.betOnColor === winningColor) {
