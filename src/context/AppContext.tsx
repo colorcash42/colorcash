@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, sendPasswordResetEmail } from "firebase/auth";
@@ -109,6 +109,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
+  const prevRoundStatusRef = useRef<string | null>(null);
 
   const isUserAdmin = user ? ADMIN_UIDS.includes(user.uid) : false;
 
@@ -138,13 +139,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.uid]);
 
   useEffect(() => {
-    // Restore theme and sound settings from localStorage
+    // Restore theme from localStorage
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme) {
       setThemeState(storedTheme);
-      document.body.classList.add(storedTheme);
-    } else {
-      document.body.classList.add('light');
     }
     
     const storedSound = localStorage.getItem("soundEnabled");
@@ -164,7 +162,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Live game status listener
     const liveStatusRef = doc(db, "liveGameStatus", "current");
     const unsubscribeLiveGame = onSnapshot(liveStatusRef, (doc) => {
-        setLiveGameRound(doc.exists() ? serializeObject(doc.data()) as LiveGameRound : null);
+        const newRound = doc.exists() ? serializeObject(doc.data()) as LiveGameRound : null;
+        setLiveGameRound(newRound);
+        
+        // --- REAL-TIME UPDATE LOGIC ---
+        // If the round just finished (status changed from 'betting' to 'awarding'),
+        // we immediately refetch all user data to get updated wallet and bet history.
+        if (prevRoundStatusRef.current === 'betting' && newRound?.status === 'awarding') {
+            if(user) {
+              fetchData(user.uid);
+            }
+        }
+        prevRoundStatusRef.current = newRound?.status ?? null;
+        
     }, (error) => {
         console.error("Live game listener failed:", error);
         setLiveGameRound(null);
@@ -174,7 +184,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         unsubscribeAuth();
         unsubscribeLiveGame();
     };
-  }, [fetchData]);
+  }, [fetchData, user]);
 
   // Listener for user-specific live bets for the current round
   useEffect(() => {
@@ -196,14 +206,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, liveGameRound]);
 
-  const setTheme = (theme: Theme) => {
-    // Update state
-    setThemeState(theme);
-    // Update localStorage
-    localStorage.setItem("theme", theme);
-    // Update body class
-    document.body.classList.remove("light", "dark");
-    document.body.classList.add(theme);
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem("theme", newTheme);
   };
   
   const setSoundEnabled = (enabled: boolean) => {
@@ -417,6 +422,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const credential = EmailAuthProvider.credential(user.email, currentPass);
       await reauthenticateWithCredential(user, credential);
       
+      // The password is not changed via a server action anymore, so this call can be removed.
+      // await changePasswordAction(user.uid, newPass); 
       await updatePassword(user, newPass);
       
       const result = { success: true, message: "Password updated successfully!" };

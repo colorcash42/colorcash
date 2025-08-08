@@ -10,10 +10,13 @@ export function ClientWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useAppContext();
 
   useEffect(() => {
-    const body = document.body;
-    body.classList.remove("light", "dark");
-    body.classList.add(theme);
+    // This effect now ONLY runs on the client after hydration.
+    // It ensures the correct theme class is applied without causing a mismatch.
+    document.body.classList.remove("light", "dark");
+    document.body.classList.add(theme);
   }, [theme]);
 
+  // suppressHydrationWarning is added to the html tag in RootLayout,
+  // but we return the children directly here. The effect handles the rest.
   return <>{children}</>;
 }
