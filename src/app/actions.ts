@@ -264,7 +264,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             // --- END GAME LOGIC ---
             
             if (isWin) {
-                payoutRate = 2; // Set all winning payouts to 2x
+                payoutRate = 1.9; // Set all winning payouts to 1.9x for a house edge
             }
 
             const payout = isWin ? amount * payoutRate : 0;
@@ -331,7 +331,7 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
                 isWin = true;
             }
             
-            const payoutRate = 2; // Set payout to 2x
+            const payoutRate = 1.9; // Set payout to 1.9x for a house edge
             const payout = isWin ? amount * payoutRate : 0;
             const newBalance = currentBalance - amount + payout;
 
@@ -621,7 +621,7 @@ export async function endFourColorRoundAction(winningColor: 'Red' | 'Yellow' | '
         if (betsSnapshot.empty) {
             console.log("No bets placed in this round.");
         } else {
-            const PAYOUT_MULTIPLIER = 2; // Set all winning payouts to 2x
+            const PAYOUT_MULTIPLIER = 1.9; // Set all winning payouts to 1.9x for a house edge
             betsSnapshot.docs.forEach((betDoc) => {
                 const bet = betDoc.data() as LiveBet;
                 if (bet.betOnColor === winningColor) {
