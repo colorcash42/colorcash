@@ -15,7 +15,7 @@ import {
   getBets, 
   getTransactions, 
   placeBetAction,
-  placeOddEvenBetAction,
+  placeHeadTailsBetAction,
   requestDepositAction,
   requestWithdrawalAction,
   handleTransactionAction,
@@ -34,7 +34,7 @@ import { doc, onSnapshot, Timestamp, collection, query, where } from "firebase/f
 
 type Theme = "light" | "dark";
 type ColorCashBetType = 'color' | 'number' | 'size' | 'trio';
-type OddEvenBetType = 'Odd' | 'Even';
+type HeadTailsBetType = 'Heads' | 'Tails';
 type FourColorBetType = 'Red' | 'Yellow' | 'Black' | 'Blue';
 
 
@@ -83,7 +83,7 @@ interface AppContextType {
   signup: (email: string, pass: string, referralCode?: string) => Promise<void>;
   logout: () => void;
   placeBet: (amount: number, betType: ColorCashBetType, betValue: string | number) => Promise<any>;
-  placeOddEvenBet: (amount: number, betValue: OddEvenBetType) => Promise<any>;
+  placeHeadTailsBet: (amount: number, betValue: HeadTailsBetType) => Promise<any>;
   placeFourColorBet: (amount: number, betOnColor: FourColorBetType) => Promise<any>;
   requestDeposit: (amount: number, utr: string) => Promise<void>;
   requestWithdrawal: (amount: number, upi: string) => Promise<void>;
@@ -306,9 +306,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return placeBetAction(user.uid, amount, betType, betValue).then(handleBetResponse);
   };
   
-  const placeOddEvenBet = (amount: number, betValue: OddEvenBetType) => {
+  const placeHeadTailsBet = (amount: number, betValue: HeadTailsBetType) => {
     if (!user) return Promise.resolve({ success: false, message: "User not logged in" });
-    return placeOddEvenBetAction(user.uid, amount, betValue).then(handleBetResponse);
+    return placeHeadTailsBetAction(user.uid, amount, betValue).then(handleBetResponse);
   };
   
   const placeFourColorBet = async (amount: number, betOnColor: FourColorBetType) => {
@@ -421,7 +421,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user, userData, allUsers, isLoggedIn, isLoading, walletBalance, winningsBalance,
     bets, transactions, pendingTransactions, liveGameRound, userLiveBets,
-    login, signup, logout, placeBet, placeOddEvenBet, placeFourColorBet,
+    login, signup, logout, placeBet, placeHeadTailsBet, placeFourColorBet,
     requestDeposit, requestWithdrawal, handleTransaction, getGuruSuggestion,
     changePassword, sendPasswordReset, fetchData, fetchAllUsers,
     theme, setTheme, isUserAdmin, viewAsAdmin, setViewAsAdmin,
@@ -438,3 +438,5 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+    

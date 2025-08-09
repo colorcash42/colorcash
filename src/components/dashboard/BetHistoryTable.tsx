@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Dices, Gamepad2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
+import { Coins, Gamepad2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 
 // Helper function to convert ISO string to Date
@@ -31,8 +31,8 @@ const getGameDisplay = (bet: Bet) => {
     switch(bet.gameId) {
         case 'colorcash':
             return <div className="flex items-center gap-2"><Palette className="h-4 w-4" /> ColorCash</div>;
-        case 'oddeven':
-            return <div className="flex items-center gap-2"><Dices className="h-4 w-4" /> Odd/Even</div>;
+        case 'headtails':
+            return <div className="flex items-center gap-2"><Coins className="h-4 w-4" /> Head/Tails</div>;
         case 'live-four-color':
             return <div className="flex items-center gap-2"><Gamepad2 className="h-4 w-4" /> 4-Color Live</div>;
         default:
@@ -79,11 +79,11 @@ const getBetDisplayValue = (bet: Bet) => {
                 ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-400' 
                 : 'bg-orange-500/20 text-orange-700 dark:text-orange-400';
             return <Badge className={sizeClass}>{bet.betValue}</Badge>
-        case 'oddOrEven':
-            const oddEvenClass = bet.betValue === 'Odd'
-                ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-400'
-                : 'bg-purple-500/20 text-purple-700 dark:text-purple-400';
-            return <Badge className={oddEvenClass}>{bet.betValue}</Badge>
+        case 'headOrTails':
+            const headTailsClass = bet.betValue === 'Heads'
+                ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400'
+                : 'bg-gray-500/20 text-gray-700 dark:text-gray-400';
+            return <Badge className={headTailsClass}>{bet.betValue}</Badge>
         default:
             return <Badge variant="outline">{bet.betValue}</Badge>
     }
@@ -179,3 +179,5 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
     </>
   );
 }
+
+    

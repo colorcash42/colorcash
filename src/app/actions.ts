@@ -209,7 +209,7 @@ export async function getPendingTransactions(): Promise<{ transactions: Transact
 
 
 // --- MUTATION FUNCTIONS (SERVER ACTIONS) ---
-type BetType = 'color' | 'number' | 'size' | 'trio' | 'oddOrEven';
+type BetType = 'color' | 'number' | 'size' | 'trio' | 'headOrTails';
 
 interface ColorCashBetResult {
     isWin: boolean;
@@ -329,9 +329,9 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
     }
 }
 
-interface OddEvenBetResult { isWin: boolean; payout: number; winningNumber: number; }
+interface HeadTailsBetResult { isWin: boolean; payout: number; winningSide: 'Heads' | 'Tails'; }
 
-export async function placeOddEvenBetAction(userId: string, amount: number, betValue: 'Odd' | 'Even'): Promise<{ success: boolean; message: string; result?: OddEvenBetResult; }> {
+export async function placeHeadTailsBetAction(userId: string, amount: number, betValue: 'Heads' | 'Tails'): Promise<{ success: boolean; message: string; result?: HeadTailsBetResult; }> {
     try {
         const userDocRef = doc(db, "users", userId);
         const betsCollectionRef = collection(db, `users/${userId}/bets`);
@@ -352,9 +352,8 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
             
             const deductions = deductFromBalances(amount, currentBalances);
 
-            const winningNumber = Math.floor(Math.random() * 6) + 1;
-            const isWinningNumberEven = winningNumber % 2 === 0;
-            let isWin = (betValue === 'Even' && isWinningNumberEven) || (betValue === 'Odd' && !isWinningNumberEven);
+            const winningSide = Math.random() < 0.5 ? 'Heads' : 'Tails';
+            let isWin = betValue === winningSide;
             
             const payoutRate = 1.9;
             const payout = isWin ? amount * payoutRate : 0;
@@ -367,23 +366,23 @@ export async function placeOddEvenBetAction(userId: string, amount: number, betV
 
             const newBetRef = doc(betsCollectionRef);
             transaction.set(newBetRef, {
-                gameId: 'oddeven', betType: 'oddOrEven', betValue, amount,
+                gameId: 'headtails', betType: 'headOrTails', betValue, amount,
                 outcome: isWin ? "win" : "loss", payout,
                 timestamp: serverTimestamp(),
             });
             
-            return { isWin, payout, winningNumber };
+            return { isWin, payout, winningSide };
         });
 
         revalidatePath('/dashboard');
-        revalidatePath('/games/odd-even');
+        revalidatePath('/games/head-tails');
 
         return { 
             success: true, result: { ...betResult },
             message: betResult.isWin ? `You won ₹${betResult.payout.toFixed(2)}` : `You lost ₹${amount.toFixed(2)}`
         };
     } catch (e: any) {
-        console.error("placeOddEvenBetAction failed: ", e);
+        console.error("placeHeadTailsBetAction failed: ", e);
         return { success: false, message: typeof e === 'string' ? e : "An unknown error occurred." };
     }
 }
@@ -691,3 +690,5 @@ export async function getAllUsers(): Promise<{ users: UserData[] }> {
         return { users: [] };
     }
 }
+
+    

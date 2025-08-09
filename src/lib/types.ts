@@ -3,8 +3,8 @@ import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Bet = {
   id: string;
-  gameId: 'colorcash' | 'oddeven' | 'live-four-color';
-  betType: "color" | "number" | "size" | "trio" | "oddOrEven" | "live";
+  gameId: 'colorcash' | 'headtails' | 'live-four-color';
+  betType: "color" | "number" | "size" | "trio" | "headOrTails" | "live";
   betValue: string | number;
   amount: number;
   outcome: "win" | "loss" | "pending";
@@ -74,3 +74,5 @@ export type UserData = {
     referralEarnings: number;
     lastSeen: string | Timestamp; // For presence tracking
 }
+
+    

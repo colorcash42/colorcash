@@ -1,150 +1,180 @@
-
 "use client";
-import React, { useState } from 'react';
+
+import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from '@/hooks/use-toast';
-import { Dices, Gem, Loader2 } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog"
-import { cn } from '@/lib/utils';
-import { useSound } from '@/hooks/use-sound';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
+import type { Bet } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { Coins, Gamepad2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../ui/button";
 
-function ResultDialog({ isOpen, onOpenChange, result, betAmount }: { isOpen: boolean, onOpenChange: (isOpen: boolean) => void, result: any, betAmount: number }) {
-    if (!result) return null;
+// Helper function to convert ISO string to Date
+const toDate = (timestamp: string | Date): Date => {
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
+  }
+  return timestamp;
+};
 
-    const { isWin, winningNumber, payout } = result;
-    
-    return (        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="text-center">
-                <DialogHeader>
-                    <DialogTitle className={cn("text-3xl font-bold", isWin ? "text-green-500" : "text-destructive")}>{isWin ? "Congratulations, You Won!" : "Sorry, You Lost"}</DialogTitle>
-                    <DialogDescription>The die rolled...</DialogDescription>
-                </DialogHeader>
-                <div className="my-6">
-                    <div className="w-24 h-24 mx-auto rounded-lg flex items-center justify-center shadow-lg bg-secondary">
-                        <span className="text-5xl font-bold">{winningNumber}</span>
-                    </div>
-                </div>
-                <p className="text-lg font-medium">
-                    {isWin ? (
-                        `You won ₹${payout.toFixed(2)}`
-                    ) : (
-                        `You lost ₹${betAmount.toFixed(2)}`
-                    )}
-                </p>
-                <DialogClose asChild>
-                    <Button className="w-full mt-4">Play Again</Button>
-                </DialogClose>
-            </DialogContent>
-        </Dialog>
-    )
+const getGameDisplay = (bet: Bet) => {
+    switch(bet.gameId) {
+        case 'colorcash':
+            return <div className="flex items-center gap-2"><Palette className="h-4 w-4" /> ColorCash</div>;
+        case 'headtails':
+            return <div className="flex items-center gap-2"><Coins className="h-4 w-4" /> Head/Tails</div>;
+        case 'live-four-color':
+            return <div className="flex items-center gap-2"><Gamepad2 className="h-4 w-4" /> 4-Color Live</div>;
+        default:
+             // Default to ColorCash for older bets without a gameId
+            return <div className="flex items-center gap-2"><Palette className="h-4 w-4" /> ColorCash</div>;
+    }
+}
+
+const getBetDisplayValue = (bet: Bet) => {
+    if (bet.gameId === 'live-four-color') {
+        const color = bet.betValue.toString().replace('Bet on ', '');
+        let colorClass = '';
+        if (color === 'Red') colorClass = 'bg-red-500 text-white';
+        if (color === 'Yellow') colorClass = 'bg-yellow-400 text-black';
+        if (color === 'Black') colorClass = 'bg-black text-white';
+        if (color === 'Blue') colorClass = 'bg-blue-500 text-white';
+         return <Badge className={cn(colorClass)}>
+            <span className="w-2 h-2 rounded-full mr-2" style={{backgroundColor: 'currentColor'}}></span>
+            {color}
+        </Badge>
+    }
+
+    switch (bet.betType) {
+        case 'color':
+            let colorClass = '';
+            if (bet.betValue === 'Red') colorClass = 'bg-red-500 text-white';
+            if (bet.betValue === 'Green') colorClass = 'bg-green-500 text-white';
+            if (bet.betValue === 'Violet') colorClass = 'bg-violet-500 text-white';
+            return <Badge className={cn(colorClass)}>{bet.betValue}</Badge>
+        case 'number':
+             if (bet.betValue === 0) {
+                return <Badge variant="outline">0 (Jackpot)</Badge>
+             }
+             return <Badge variant="outline">{bet.betValue}</Badge>
+        case 'trio':
+            const trioMap: { [key: string]: string } = {
+                'trio1': 'Trio 1-4-7',
+                'trio2': 'Trio 2-5-8',
+                'trio3': 'Trio 3-6-9',
+            };
+            return <Badge variant="secondary">{trioMap[bet.betValue as string] || bet.betValue}</Badge>
+        case 'size':
+             const sizeClass = bet.betValue === 'Small' 
+                ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-400' 
+                : 'bg-orange-500/20 text-orange-700 dark:text-orange-400';
+            return <Badge className={sizeClass}>{bet.betValue}</Badge>
+        case 'headOrTails':
+            const headTailsClass = bet.betValue === 'Heads'
+                ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400'
+                : 'bg-gray-500/20 text-gray-700 dark:text-gray-400';
+            return <Badge className={headTailsClass}>{bet.betValue}</Badge>
+        default:
+            return <Badge variant="outline">{bet.betValue}</Badge>
+    }
 }
 
 
-export function OddEvenGame({ walletBalance }: { walletBalance: number }) {
-  const { placeOddEvenBet } = useAppContext();
-  const [amount, setAmount] = useState('10');
-  const [isLoading, setIsLoading] = useState(false);
-  const [betValue, setBetValue] = useState<'Odd' | 'Even'>('Odd');
-  const { toast } = useToast();
-  
-  const [isResultOpen, setIsResultOpen] = useState(false);
-  const [lastResult, setLastResult] = useState(null);
-  const [lastBetAmount, setLastBetAmount] = useState(0);
-  
-  const playBetSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fbet.mp3?alt=media&token=1434c114-53c7-4df3-92f7-234f59846114');
-  const playWinSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Fwin.mp3?alt=media&token=1a80c655-5231-4122-8356-55447a166943');
-  const playLoseSound = useSound('https://firebasestorage.googleapis.com/v0/b/trivium-clash.appspot.com/o/sounds%2Flose.mp3?alt=media&token=e62925f4-3d0b-402a-9e12-07751910e53a');
+export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
+  const { bets } = useAppContext();
+  const [currentPage, setCurrentPage] = useState(1);
+  const BETS_PER_PAGE = 5;
 
-  const handleBet = async () => {
-    const betAmount = parseFloat(amount);
-    if (isNaN(betAmount) || betAmount <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Amount",
-        description: "Please enter a valid positive amount to bet.",
-      });
-      return;
-    }
-     if (betAmount > walletBalance) {
-      toast({
-        variant: "destructive",
-        title: "Insufficient Balance",
-        description: "You cannot bet more than your wallet balance.",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    playBetSound();
-    const response = await placeOddEvenBet(betAmount, betValue);
-    
-    if (response.success && response.result) {
-      setLastResult(response.result);
-      setLastBetAmount(betAmount);
-      setIsResultOpen(true);
-      if (response.result.isWin) {
-        playWinSound();
-      } else {
-        playLoseSound();
-      }
-    } else {
-       toast({
-        variant: "destructive",
-        title: "Bet Failed",
-        description: response.message,
-      });
-    }
-    setIsLoading(false);
+  // Use the bets from context if available, otherwise use initialBets from server.
+  // This ensures the table updates after a new bet is placed.
+  const displayBets = bets.length > 0 ? bets : initialBets;
+
+  const totalPages = Math.ceil(displayBets.length / BETS_PER_PAGE);
+  const paginatedBets = displayBets.slice(
+    (currentPage - 1) * BETS_PER_PAGE,
+    currentPage * BETS_PER_PAGE
+  );
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
-  
-  const handlePresetAmount = (presetAmount: number) => {
-    setAmount(current => (parseFloat(current || '0') + presetAmount).toString());
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
-  
+
   return (
     <>
-    <CardContent className="space-y-6">
-        <div className="space-y-2">
-             <Label>1. Select your choice:</Label>
-             <ToggleGroup type="single" value={betValue} onValueChange={(v) => v && setBetValue(v as any)} className="grid grid-cols-2">
-                <ToggleGroupItem value="Odd" className="data-[state=on]:bg-cyan-500 data-[state=on]:text-white">Odd</ToggleGroupItem>
-                <ToggleGroupItem value="Even" className="data-[state=on]:bg-purple-500 data-[state=on]:text-white">Even</ToggleGroupItem>
-             </ToggleGroup>
-        </div>
-        
-        <div className="space-y-2">
-             <Label htmlFor="bet-amount-oddeven">2. Enter your bet amount:</Label>
-            <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
-                <Input id="bet-amount-oddeven" type="number" value={amount} onChange={e => setAmount(e.target.value)} className="pl-6" />
+      <CardContent className="p-0">
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Game</TableHead>
+                    <TableHead>Bet On</TableHead>
+                    <TableHead className="hidden sm:table-cell">Type</TableHead>
+                    <TableHead>Bet Amount</TableHead>
+                    <TableHead>Outcome</TableHead>
+                    <TableHead>Payout</TableHead>
+                    <TableHead className="hidden sm:table-cell">Time</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {paginatedBets.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                            You haven't placed any bets yet.
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                    paginatedBets.map((bet) => (
+                        <TableRow key={bet.id}>
+                            <TableCell>
+                                {getGameDisplay(bet)}
+                            </TableCell>
+                            <TableCell>{getBetDisplayValue(bet)}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{bet.betType}</TableCell>
+                            <TableCell>₹{bet.amount.toFixed(2)}</TableCell>
+                            <TableCell>
+                                <Badge variant={bet.outcome === 'win' ? 'default' : bet.outcome === 'loss' ? 'destructive' : 'secondary'}>{bet.outcome}</Badge>
+                            </TableCell>
+                            <TableCell className={cn(bet.outcome === 'win' ? 'text-green-500' : 'text-red-500')}>
+                                {bet.outcome === 'win' ? '+' : bet.outcome === 'loss' ? '-' : ''}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
+                            </TableCell>
+                             <TableCell className="hidden sm:table-cell">
+                               {bet.timestamp ? formatDistanceToNow(toDate(bet.timestamp), { addSuffix: true }) : 'Just now'}
+                            </TableCell>
+                        </TableRow>
+                    ))
+                )}
+            </TableBody>
+        </Table>
+      </CardContent>
+      {totalPages > 1 && (
+         <CardFooter className="flex items-center justify-between pt-4">
+            <div className="text-xs text-muted-foreground">
+                Page {currentPage} of {totalPages}
             </div>
-            <div className="grid grid-cols-4 gap-2 text-xs">
-                <Button variant="outline" size="sm" onClick={() => handlePresetAmount(10)}>+10</Button>
-                <Button variant="outline" size="sm" onClick={() => handlePresetAmount(50)}>+50</Button>
-                <Button variant="outline" size="sm" onClick={() => handlePresetAmount(100)}>+100</Button>
-                <Button variant="outline" size="sm" onClick={() => handlePresetAmount(500)}>+500</Button>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
+                    <ChevronLeft />
+                    Previous
+                </Button>
+                 <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                    Next
+                    <ChevronRight />
+                </Button>
             </div>
-        </div>
-
-        <Button onClick={handleBet} disabled={isLoading} className="w-full text-lg py-6">
-            {isLoading ? <Loader2 className="animate-spin" /> : <Dices />}
-            {isLoading ? 'Placing Bet...' : `Bet (₹${amount || 0})`}
-        </Button>
-    </CardContent>
-
-    <ResultDialog isOpen={isResultOpen} onOpenChange={setIsResultOpen} result={lastResult} betAmount={lastBetAmount} />
+        </CardFooter>
+      )}
     </>
   );
 }

@@ -6,7 +6,7 @@ import { Header } from "@/components/common/Header";
 import { BetHistoryTable } from "@/components/dashboard/BetHistoryTable";
 import { useAppContext } from "@/context/AppContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent } from "@/components/ui/card";
-import { Dices, Palette, ArrowRight, Gamepad2, Clock } from "lucide-react";
+import { Coins, Palette, ArrowRight, Gamepad2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -73,10 +73,10 @@ export default function DashboardPage() {
                 className="hover:shadow-lg transition-shadow"
               />
                <GameCard 
-                icon={<Dices className="h-6 w-6 text-primary" />} 
-                title="Odd or Even" 
-                description="Guess if the die roll is odd or even." 
-                href="/games/odd-even"
+                icon={<Coins className="h-6 w-6 text-primary" />} 
+                title="Heads or Tails" 
+                description="Flip a coin. Win if you guess right." 
+                href="/games/head-tails"
                 className="hover:shadow-lg transition-shadow"
               />
                <GameCard 
@@ -99,3 +99,5 @@ export default function DashboardPage() {
     </PageClientAuth>
   );
 }
+
+    
