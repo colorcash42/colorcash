@@ -28,7 +28,7 @@ export function OfferBanner() {
     return (
         <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 p-6 text-white shadow-lg">
             <div className="absolute -bottom-10 -right-10 opacity-20">
-                <RakhiIcon className="h-40 w-40 text-white" />
+                <RakhiIcon className="h-48 w-48 text-white" />
             </div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
                 <h2 className="text-4xl font-bold">
