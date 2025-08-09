@@ -31,10 +31,7 @@ export function OfferBanner() {
                 <RakhiIcon className="h-40 w-40 text-white" />
             </div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-                <h2 
-                    className="text-4xl font-bold animate-pulse"
-                    style={{ textShadow: '0 0 5px #fff, 0 0 10px #fff, 0 0 15px #f09, 0 0 20px #f09, 0 0 25px #f09, 0 0 30px #f09, 0 0 35px #f09' }}
-                >
+                <h2 className="text-4xl font-bold">
                     Happy Raksha Bandhan!
                 </h2>
                 <p className="text-lg font-semibold">
