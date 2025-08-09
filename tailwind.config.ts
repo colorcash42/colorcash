@@ -85,12 +85,27 @@ export default {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0%)' },
         },
+        'flip-heads': {
+            '0%': { transform: 'rotateY(0deg)' },
+            '100%': { transform: 'rotateY(1980deg)' }, /* 5.5 rotations, ends on Heads (180deg) */
+        },
+        'flip-tails': {
+            '0%': { transform: 'rotateY(0deg)' },
+            '100%': { transform: 'rotateY(1800deg)' }, /* 5 rotations, ends on Tails (0deg) */
+        },
+        'flip-loop': {
+            '0%': { transform: 'rotateY(0deg)' },
+            '100%': { transform: 'rotateY(360deg)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'marquee': 'marquee 60s linear infinite',
         'marquee2': 'marquee2 60s linear infinite',
+        'flip-heads': 'flip-heads 2.5s ease-out forwards',
+        'flip-tails': 'flip-tails 2.5s ease-out forwards',
+        'flip-loop': 'flip-loop 0.5s linear infinite',
       },
     },
   },

@@ -67,3 +67,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+    .coin-container {
+        transform-style: preserve-3d;
+    }
+    .coin-face {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+}
