@@ -12,7 +12,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/components/common/Marquee";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { OfferBanner } from "@/components/dashboard/OfferBanner";
 
 
 const GameCard = ({ icon, title, description, href, className }: { icon: React.ReactNode, title: string, description: string, href: string, className?: string }) => (
@@ -51,8 +50,6 @@ export default function DashboardPage() {
          <main className="flex-1 p-4 md:p-6 space-y-6">
           <Marquee />
           
-          <OfferBanner />
-
           <div className="space-y-2">
             <h1 className="text-2xl font-bold">
                 Welcome! Choose Your Game
@@ -103,5 +100,3 @@ export default function DashboardPage() {
     </PageClientAuth>
   );
 }
-
-    
