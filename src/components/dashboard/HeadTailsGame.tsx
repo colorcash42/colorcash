@@ -187,3 +187,4 @@ export function HeadTailsGame({ walletBalance }: { walletBalance: number }) {
   );
 }
 
+
