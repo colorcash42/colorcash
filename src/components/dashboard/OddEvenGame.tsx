@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -16,7 +17,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Coins, Gamepad2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 // Helper function to convert ISO string to Date
 const toDate = (timestamp: string | Date): Date => {
@@ -123,7 +124,7 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                     <TableHead className="hidden sm:table-cell">Type</TableHead>
                     <TableHead>Bet Amount</TableHead>
                     <TableHead>Outcome</TableHead>
-                    <TableHead>Payout</TableHead>
+                    <TableHead>Profit/Loss</TableHead>
                     <TableHead className="hidden sm:table-cell">Time</TableHead>
                 </TableRow>
             </TableHeader>
@@ -146,7 +147,7 @@ export function BetHistoryTable({ initialBets }: { initialBets: Bet[] }) {
                             <TableCell>
                                 <Badge variant={bet.outcome === 'win' ? 'default' : bet.outcome === 'loss' ? 'destructive' : 'secondary'}>{bet.outcome}</Badge>
                             </TableCell>
-                            <TableCell className={cn(bet.outcome === 'win' ? 'text-green-500' : 'text-red-500')}>
+                            <TableCell className={cn(bet.outcome === 'win' ? 'text-green-500' : bet.outcome === 'loss' ? 'text-red-500' : '')}>
                                 {bet.outcome === 'win' ? '+' : bet.outcome === 'loss' ? '-' : ''}₹{bet.outcome === 'win' ? bet.payout.toFixed(2) : bet.amount.toFixed(2)}
                             </TableCell>
                              <TableCell className="hidden sm:table-cell">
