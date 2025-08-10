@@ -300,7 +300,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
             
             const profit = isWin ? (amount * payoutRate) - amount : 0;
             
-            // Update balances
+            // Update balances: Deduct bet amount first
             const updates: { [key: string]: any } = {
                 depositBalance: increment(-deductions.deposit),
                 winningsBalance: increment(-deductions.winnings),
@@ -312,7 +312,7 @@ export async function placeBetAction(userId: string, amount: number, betType: Be
                 updates.depositBalance = increment(updates.depositBalance.operand + deductions.deposit);
                 updates.winningsBalance = increment(updates.winningsBalance.operand + deductions.winnings);
                 updates.bonusBalance = increment(updates.bonusBalance.operand + deductions.bonus);
-                // Add profit to winnings
+                // Add *only* the profit to winnings
                 updates.winningsBalance = increment(updates.winningsBalance.operand + profit);
             }
             
@@ -370,7 +370,7 @@ export async function placeHeadTailsBetAction(userId: string, amount: number, be
             const payoutRate = 1.9;
             const profit = isWin ? (amount * payoutRate) - amount : 0;
 
-            // Update balances
+            // Update balances: Deduct bet amount first
             const updates: { [key: string]: any } = {
                 depositBalance: increment(-deductions.deposit),
                 winningsBalance: increment(-deductions.winnings),
@@ -382,7 +382,7 @@ export async function placeHeadTailsBetAction(userId: string, amount: number, be
                 updates.depositBalance = increment(updates.depositBalance.operand + deductions.deposit);
                 updates.winningsBalance = increment(updates.winningsBalance.operand + deductions.winnings);
                 updates.bonusBalance = increment(updates.bonusBalance.operand + deductions.bonus);
-                // Add profit to winnings
+                // Add *only* the profit to winnings
                 updates.winningsBalance = increment(updates.winningsBalance.operand + profit);
             }
 
